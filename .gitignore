@@ -1,0 +1,38 @@
+# Entorno virtual (vive un nivel arriba, nunca se versiona)
+.venv/
+
+# Base de datos local
+backend/autostock.db
+backend/autostock.db-shm
+backend/autostock.db-wal
+backend/database/autostock.db
+backend/database/autostock.db-shm
+backend/database/autostock.db-wal
+backend/backend/
+
+# Cache de Python
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+.pytest_cache/
+backend/.pytest_cache/
+
+# Logs y backups generados en runtime
+backend/logs/
+backend/backend/logs/
+backend/backend/backups/
+
+# Variables de entorno (contienen secretos)
+.env
+backend/.env
+
+# Archivos internos del agente de IA y del IDE
+.agent/
+CLAUDE.md
+.cursor/
+.vscode/
+*.idea/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

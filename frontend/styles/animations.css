@@ -1,0 +1,144 @@
+/**
+ * AutoStock — Obsidian Dark Theme
+ * Archivo: animations.css
+ * Generado desde: Radix UI, tw-animate-css, transiciones del layout
+ * Descripción: Keyframes y clases de animación reutilizables.
+ *              Incluye animaciones de modales/dialogs (Radix UI),
+ *              dropdowns, tooltips, sidebar y spinner.
+ *
+ * Uso:
+ *   - Agregar/quitar `data-state="open"` o `data-state="closed"` via JS
+ *     para activar las animaciones de entrada/salida en overlays y paneles.
+ *   - La clase `.sidebar-expanded` / `.sidebar-collapsed` en #app-sidebar
+ *     controla la transición de ancho.
+ *   - `.animate-spin` hace girar un elemento (ej: spinner de carga).
+ */
+
+/* ═══════════════════════════════════════════════════════
+   KEYFRAMES
+   ═══════════════════════════════════════════════════════ */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes scaleOut {
+  from { opacity: 1; transform: scale(1); }
+  to   { opacity: 0; transform: scale(0.95); }
+}
+
+@keyframes slideDownAndFade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUpAndFade {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-4px); }
+}
+
+@keyframes slideInFromRight {
+  from { opacity: 0; transform: translateX(8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ═══════════════════════════════════════════════════════
+   OVERLAY / BACKDROP (dialogs, drawers)
+   ═══════════════════════════════════════════════════════ */
+
+.modal-overlay[data-state="open"] {
+  animation: fadeIn 150ms ease;
+}
+
+.modal-overlay[data-state="closed"] {
+  animation: fadeOut 150ms ease;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PANEL DE DIALOG / MODAL
+   ═══════════════════════════════════════════════════════ */
+
+.modal-panel[data-state="open"] {
+  animation: scaleIn 150ms ease;
+}
+
+.modal-panel[data-state="closed"] {
+  animation: scaleOut 150ms ease;
+}
+
+/* ═══════════════════════════════════════════════════════
+   DROPDOWN MENU / SELECT POPOVER
+   ═══════════════════════════════════════════════════════ */
+
+.dropdown-content[data-state="open"] {
+  animation: slideDownAndFade 150ms ease;
+}
+
+.dropdown-content[data-state="closed"] {
+  animation: slideUpAndFade 100ms ease;
+}
+
+/* ═══════════════════════════════════════════════════════
+   TOOLTIP
+   ═══════════════════════════════════════════════════════ */
+
+.tooltip-content[data-state="delayed-open"],
+.tooltip-content[data-state="instant-open"] {
+  animation: slideInFromRight 150ms ease;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SIDEBAR — transición de colapso/expand
+   ═══════════════════════════════════════════════════════ */
+
+#app-sidebar {
+  transition: width 200ms ease, transform 200ms ease;
+}
+
+#main-content {
+  transition: margin-left 200ms ease;
+}
+
+/* ═══════════════════════════════════════════════════════
+   UTILIDADES DE ANIMACIÓN
+   ═══════════════════════════════════════════════════════ */
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+.animate-fade-in {
+  animation: fadeIn 200ms ease;
+}
+
+/* ═══════════════════════════════════════════════════════
+   TRANSICIONES COMUNES
+   ═══════════════════════════════════════════════════════ */
+
+.transition-colors {
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+
+.transition-all {
+  transition: all 200ms ease;
+}
+
+.transition-opacity {
+  transition: opacity 150ms ease;
+}

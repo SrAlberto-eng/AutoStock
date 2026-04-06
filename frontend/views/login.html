@@ -1,0 +1,157 @@
+<!--
+  Vista: Login
+  Fuente React: app/page.tsx
+  Descripción: Pantalla de inicio de sesión de AutoStock.
+               Contiene formulario con email y contraseña con toggle de visibilidad.
+               No incluye sidebar ni topbar (es una vista standalone).
+  Scripts requeridos: toast.js, login.js
+  Relación: login.js maneja la validación del formulario, el toggle
+            de contraseña y la redirección a dashboard.html.
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoStock — Iniciar Sesión</title>
+  <link rel="stylesheet" href="../styles/variables.css">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/animations.css">
+</head>
+<body style="background-color:#0B0D0F;">
+
+  <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px; background-color:#0B0D0F;">
+    <div style="width:100%; max-width:360px;">
+
+      <!-- Logo -->
+      <div style="display:flex; flex-direction:column; align-items:center; margin-bottom:32px;">
+        <div style="width:56px; height:56px; border-radius:12px; background-color:#5AA9FF; display:flex; align-items:center; justify-content:center; margin-bottom:16px;">
+          <!-- Package icon -->
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0B0D0F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m7.5 4.27 9 5.15"/>
+            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+            <path d="m3.3 7 8.7 5 8.7-5"/>
+            <path d="M12 22V12"/>
+          </svg>
+        </div>
+        <h1 style="font-size:24px; font-weight:600; color:#E6E6E6; margin:0;">AutoStock</h1>
+        <p style="font-size:14px; color:#A6A6A6; margin-top:4px;">Gestión de Inventarios</p>
+      </div>
+
+      <!-- Login Form Card -->
+      <div style="background-color:#131516; border-radius:8px; border:1px solid #1E2022; padding:24px;">
+        <h2 style="font-size:18px; font-weight:600; color:#E6E6E6; margin:0 0 24px;">Iniciar Sesión</h2>
+
+        <form id="login-form" novalidate>
+          <div class="field-group">
+
+            <!-- Email field -->
+            <div class="field">
+              <label class="field-label" for="email">Correo electrónico</label>
+              <div class="input-wrapper">
+                <!-- Mail icon -->
+                <span class="input-icon-left" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="20" height="16" x="2" y="4" rx="2"/>
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  </svg>
+                </span>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  class="input input-with-icon-left"
+                  placeholder="usuario@empresa.com"
+                  autocomplete="email"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- Password field -->
+            <div class="field">
+              <label class="field-label" for="password">Contraseña</label>
+              <div class="input-wrapper">
+                <!-- Lock icon -->
+                <span class="input-icon-left" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                  </svg>
+                </span>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  class="input input-with-icon-left input-with-icon-right"
+                  placeholder="•••••••••••••"
+                  autocomplete="current-password"
+                  required
+                />
+                <!-- Eye toggle button -->
+                <button
+                  id="password-toggle"
+                  type="button"
+                  class="input-icon-right"
+                  aria-label="Mostrar u ocultar contraseña"
+                  style="background:none; border:none; cursor:pointer; color:#A6A6A6; transition:color 150ms ease; padding:0;"
+                >
+                  <!-- Eye icon (when password hidden) -->
+                  <svg id="icon-eye" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <!-- EyeOff icon (when password visible) — hidden initially -->
+                  <svg id="icon-eye-off" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden">
+                    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/>
+                    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/>
+                    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/>
+                    <line x1="2" x2="22" y1="2" y2="22"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+          </div><!-- /field-group -->
+
+          <!-- Remember user -->
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; margin-top:12px;">
+            <input type="checkbox" id="remember-user" class="checkbox">
+            <span style="font-size:13px; color:#A6A6A6;">Recordar usuario</span>
+          </label>
+
+          <!-- Submit button -->
+          <button
+            id="submit-btn"
+            type="submit"
+            class="btn btn-primary w-full"
+            style="margin-top:24px; height:40px;"
+          >
+            <span id="submit-label">Iniciar Sesión</span>
+            <!-- Spinner (hidden initially) -->
+            <svg id="submit-spinner" class="hidden spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg>
+          </button>
+
+        </form><!-- /login-form -->
+      </div><!-- /card -->
+
+      <!-- Footer -->
+      <p style="text-align:center; font-size:12px; color:#A6A6A6; margin-top:24px;">
+        Sistema interno de gestión de inventarios
+      </p>
+
+    </div><!-- /max-w-sm -->
+  </div><!-- /centering wrapper -->
+
+  <!-- Toast container -->
+  <div id="toast-container"></div>
+
+  <script src="../scripts/sanitizers.js"></script>
+  <script src="../scripts/storage-manager.js"></script>
+  <script src="../scripts/api-client.js"></script>
+  <script src="../scripts/toast.js"></script>
+  <script src="../scripts/login.js"></script>
+</body>
+</html>

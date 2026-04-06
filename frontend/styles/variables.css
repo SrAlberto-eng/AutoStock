@@ -1,0 +1,77 @@
+/**
+ * AutoStock — Obsidian Dark Theme
+ * Archivo: variables.css
+ * Generado desde: app/globals.css (@theme inline y :root)
+ * Descripción: Variables CSS globales del sistema de diseño AutoStock.
+ *              Incluye colores, tipografía, bordes, radii y tokens de
+ *              sidebar y gráficas. Debe cargarse antes que main.css.
+ */
+
+:root {
+  /* ─── Fondos ─────────────────────────────────────── */
+  --background:           #0B0D0F;
+  --background-secondary: #0F1113;
+  --background-panel:     #131516;
+
+  /* ─── Texto ──────────────────────────────────────── */
+  --foreground:        #E6E6E6;
+  --foreground-muted:  #A6A6A6;
+
+  /* ─── Acento primario ────────────────────────────── */
+  --accent-primary: #5AA9FF;
+
+  /* ─── Estado / Semáforo ──────────────────────────── */
+  --status-warning: #FFB86B;
+  --status-danger:  #FF6B6B;
+  --status-success: #6BE89A;
+
+  /* ─── Divisores ──────────────────────────────────── */
+  --divider: #1E2022;
+
+  /* ─── Tokens de componentes (shadcn compat) ──────── */
+  --card:                   #131516;
+  --card-foreground:        #E6E6E6;
+  --popover:                #131516;
+  --popover-foreground:     #E6E6E6;
+  --primary:                #5AA9FF;
+  --primary-foreground:     #0B0D0F;
+  --secondary:              #131516;
+  --secondary-foreground:   #E6E6E6;
+  --muted:                  #0F1113;
+  --muted-foreground:       #A6A6A6;
+  --accent:                 #5AA9FF;
+  --accent-foreground:      #0B0D0F;
+  --destructive:            #FF6B6B;
+  --destructive-foreground: #0B0D0F;
+  --border:                 #1E2022;
+  --input:                  #0F1113;
+  --ring:                   #5AA9FF;
+
+  /* ─── Gráficas ───────────────────────────────────── */
+  --chart-1: #5AA9FF;
+  --chart-2: #6BE89A;
+  --chart-3: #FFB86B;
+  --chart-4: #FF6B6B;
+  --chart-5: #A6A6A6;
+
+  /* ─── Radii ──────────────────────────────────────── */
+  --radius:    6px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  /* ─── Sidebar ────────────────────────────────────── */
+  --sidebar:                    #0F1113;
+  --sidebar-foreground:         #E6E6E6;
+  --sidebar-primary:            #5AA9FF;
+  --sidebar-primary-foreground: #0B0D0F;
+  --sidebar-accent:             #131516;
+  --sidebar-accent-foreground:  #E6E6E6;
+  --sidebar-border:             #1E2022;
+  --sidebar-ring:               #5AA9FF;
+
+  /* ─── Tipografía ────────────────────────────────── */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Geist Mono', 'Courier New', monospace;
+}

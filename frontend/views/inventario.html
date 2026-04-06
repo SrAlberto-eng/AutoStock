@@ -1,0 +1,391 @@
+<!--
+  Vista: Inventario General
+  Fuente React: app/inventario/page.tsx
+  Descripción: Tabla de inventario con filtros por nombre, categoría,
+               área y estado de stock. Permite acceder al detalle de un
+               producto o agregar uno nuevo.
+  Modales incluidos: modal-product-detail, modal-add-product,
+                     modal-entry, modal-exit, modal-waste
+  Scripts requeridos: toast.js, layout.js, modals.js, inventario.js
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoStock — Inventario General</title>
+  <link rel="stylesheet" href="../styles/variables.css">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/animations.css">
+</head>
+<body>
+
+<div id="app-layout">
+  <div id="mobile-overlay" class="mobile-overlay" aria-hidden="true"></div>
+
+  <!-- SIDEBAR (igual para todas las vistas) -->
+  <aside id="app-sidebar" role="navigation" aria-label="Navegación principal">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+      </div>
+      <span class="sidebar-logo-text">AutoStock</span>
+    </div>
+    <nav>
+      <a href="dashboard.html" class="nav-item" title="Dashboard"><svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg><span class="nav-item-label">Dashboard</span></a>
+      <a href="inventario.html" class="nav-item" title="Inventario General"><svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg><span class="nav-item-label">Inventario General</span></a>
+      <a href="compras.html" class="nav-item" title="Lista de Compras"><svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg><span class="nav-item-label">Lista de Compras</span></a>
+      <a href="reportes.html" class="nav-item" title="Reportes"><svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg><span class="nav-item-label">Reportes</span></a>
+      <a href="usuarios.html" class="nav-item" title="Usuarios"><svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="nav-item-label">Usuarios</span></a>
+      <a href="catalogos.html" class="nav-item" title="Catálogos"><svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg><span class="nav-item-label">Catálogos</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <button id="sidebar-toggle" class="sidebar-toggle-btn" aria-label="Colapsar menú">
+        <span id="sidebar-toggle-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></svg></span>
+        <span id="sidebar-toggle-label">Colapsar</span>
+      </button>
+    </div>
+  </aside>
+  <script>try{var s=JSON.parse(localStorage.getItem('v1_ui_sidebar'));if(s&&s.collapsed)document.getElementById('app-sidebar').classList.add('collapsed');}catch(e){}</script>
+
+  <!-- MAIN -->
+  <div id="main-content">
+
+    <!-- TOP BAR -->
+    <header id="top-bar" role="banner">
+      <div class="top-bar-left">
+        <button id="mobile-menu-btn" class="btn-menu" aria-label="Abrir menú" style="display:none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
+        <h1 class="top-bar-title">Inventario General</h1>
+      </div>
+      <div class="top-bar-right">
+        <div class="dropdown-wrapper" style="position:relative;">
+          <button id="profile-trigger" class="profile-trigger" aria-label="Menú de perfil" aria-haspopup="true" aria-expanded="false"><div class="avatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div></button>
+          <div id="profile-dropdown" class="dropdown-menu profile-menu hidden" role="menu">
+            <div class="profile-menu-header"><div class="avatar avatar-lg"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div><div class="font-medium text-sm"><!-- Admin Usuario --></div><div class="text-xs text-muted"><!-- admin@empresa.com --></div></div></div>
+            <hr class="separator">
+            <button class="dropdown-item" role="menuitem" onclick="modalManager.open('modal-profile')">Mi Perfil</button>
+            <hr class="separator">
+            <button class="dropdown-item dropdown-item-danger" role="menuitem" onclick="window.location.href='login.html'">Cerrar Sesión</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- PAGE BODY -->
+    <main class="page-body">
+
+      <!-- Filters toolbar -->
+      <div class="card" style="background-color: var(--background)" style="padding:16px; margin-bottom:20px;">
+        <!-- Row 1: Header + Action -->
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+          <h2 class="card-title" style="margin:0; font-size:0.9rem; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.05em;"></h2>
+          <button class="btn btn-primary" onclick="modalManager.open('modal-add-product')" aria-label="Agregar producto">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Agregar producto
+          </button>
+        </div>
+
+        <!-- Row 2: Search + Selects -->
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:14px;">
+          <div style="position:relative;">
+            <span style="position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--color-text-muted); pointer-events:none;" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            </span>
+            <input id="inventario-search" type="search" class="input" placeholder="Buscar producto..." style="padding-left:34px; width:100%;" autocomplete="off" aria-label="Buscar producto">
+          </div>
+
+          <select id="filter-category" class="select-native" aria-label="Filtrar por categoría">
+            <option value="">Todas las categorías</option>
+          </select>
+
+          <select id="filter-area" class="select-native" aria-label="Filtrar por área">
+            <option value="">Todas las áreas</option>
+          </select>
+        </div>
+
+        <!-- Row 3: Status chips + Show inactive -->
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+          <div role="group" aria-label="Filtrar por estado" style="display:flex; gap:8px;">
+            <button class="filter-chip active" data-status="" aria-pressed="true">Todos</button>
+            <button class="filter-chip" data-status="normal" aria-pressed="false">Normal</button>
+            <button class="filter-chip" data-status="bajo_minimo" aria-pressed="false">Bajo mínimo</button>
+            <button class="filter-chip" data-status="agotado" aria-pressed="false">Agotado</button>
+          </div>
+          <label class="text-sm" style="display:flex; align-items:center; gap:6px; cursor:pointer; color:#A6A6A6;">
+            <input type="checkbox" id="chk-show-inactive-products"> Mostrar inactivos
+          </label>
+        </div>
+      </div>
+
+      <!-- Inventory table -->
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th class="text-left">Nombre</th>
+              <th class="text-left">Categoría</th>
+              <th class="text-left">Área</th>
+              <th class="text-center">Stock actual</th>
+              <th class="text-center">Stock mínimo</th>
+              <th class="text-left">Unidad</th>
+              <th>Estado</th>
+              <th style="width:100px;">Activo</th>
+              <th style="width:80px;"></th>
+            </tr>
+          </thead>
+          <tbody id="inventario-tbody">
+            <!-- Aquí van las filas de cada producto -->
+          </tbody>
+        </table>
+        <p id="inventario-empty" class="empty-state" style="display:none; padding:32px; text-align:center; color:#A6A6A6;">No se encontraron productos con los filtros aplicados.</p>
+      </div>
+
+    </main>
+  </div><!-- /main-content -->
+</div><!-- /app-layout -->
+
+<!-- ══════════════════════════════════════════════════════
+     MODALES
+     ══════════════════════════════════════════════════════ -->
+
+<!-- Modal: Detalle de producto -->
+<div id="modal-product-detail" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-product-detail-title" data-state="closed">
+  <div class="modal-dialog modal-lg modal-panel">
+    <div class="modal-header">
+      <h2 id="modal-product-detail-title" class="modal-title">Detalle del producto</h2>
+    </div>
+    <div class="modal-body">
+      <!-- Tabs: Información / Historial -->
+      <div class="modal-tabs-container">
+        <div class="modal-tabs-list" role="tablist">
+          <button class="modal-tab-trigger active" role="tab" aria-selected="true" data-tab-target="pd-info-panel">Información</button>
+          <button class="modal-tab-trigger" role="tab" aria-selected="false" data-tab-target="pd-history-panel">Historial</button>
+        </div>
+        <div id="pd-info-panel" class="tab-panel modal-tab-panel active" role="tabpanel">
+          <div class="field-group" style="grid-template-columns:1fr 1fr; display:grid; gap:12px;">
+            <div class="field"><label class="field-label">Nombre</label><input id="pd-name" class="input" type="text" readonly></div>
+            <div class="field"><label class="field-label">Categoría</label><input id="pd-category" class="input" type="text" readonly></div>
+            <div class="field"><label class="field-label">Área</label><input id="pd-area" class="input" type="text" readonly></div>
+            <div class="field"><label class="field-label">Unidad de medida</label><input id="pd-unit" class="input" type="text" readonly></div>
+            <div class="field"><label class="field-label">Stock actual</label><input id="pd-stock" class="input" type="number" readonly></div>
+            <div class="field"><label class="field-label">Stock mínimo</label><input id="pd-min-stock" class="input" type="number" readonly></div>
+          </div>
+          <div class="field" style="margin-top:12px;">
+            <label class="field-label">Nivel de stock</label>
+            <div class="progress" style="margin-top:6px;">
+              <div id="pd-progress-bar" class="progress-bar" role="progressbar" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100" style="width:75%;"></div>
+            </div>
+            <p id="pd-progress-label" class="text-xs text-muted" style="margin-top:4px;"></p>
+          </div>
+        </div>
+        <div id="pd-history-panel" class="tab-panel modal-tab-panel" role="tabpanel" aria-hidden="true">
+          <div class="table-wrapper" style="max-height:260px; overflow-y:auto;">
+            <table>
+              <thead><tr><th class="text-left">Fecha</th><th>Tipo</th><th class="text-right">Cantidad</th><th class="text-left">Usuario</th></tr></thead>
+              <tbody id="pd-history-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <button type="button" id="btn-toggle-product" class="btn btn-outline" style="color:#FF6B6B; border-color:#FF6B6B;" onclick="toggleProductFromDetail()">Desactivar</button>
+      <button type="button" class="btn btn-outline" data-modal-close="modal-product-detail">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Agregar producto -->
+<div id="modal-add-product" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-add-product-title" data-state="closed">
+  <div class="modal-dialog modal-add-product-dialog modal-panel">
+    <div class="modal-header">
+      <h2 id="modal-add-product-title" class="modal-title">Agregar Producto</h2>
+    </div>
+    <div class="modal-body">
+      <div id="ap-xml-dropzone" class="entry-upload-box" tabindex="0" role="button" aria-label="Cargar XML de catálogo">
+        <div class="entry-upload-left">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" x2="12" y1="3" y2="15"/>
+          </svg>
+          <div>
+            <p class="entry-upload-title">Importar desde XML</p>
+            <p class="entry-upload-subtitle">Arrastra un archivo o haz clic para seleccionar</p>
+            <p id="ap-xml-file-name" class="entry-upload-file"></p>
+          </div>
+        </div>
+        <button type="button" class="btn btn-outline" id="ap-xml-btn">Cargar XML</button>
+        <input id="ap-xml-input" type="file" accept=".xml,text/xml,application/xml" hidden>
+      </div>
+
+      <div class="table-wrapper entry-table-wrap" style="margin-top:16px; overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th class="text-center">Nombre</th><th class="text-center">Categoría</th><th class="text-center">Área</th><th class="text-center">Unidad</th><th class="text-center">Proveedor</th><th class="text-center">Stock</th><th class="text-center">Mín.</th><th class="text-center">Máx.</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="add-product-rows"></tbody>
+        </table>
+      </div>
+      <button type="button" class="btn btn-ghost" style="margin-top:12px;" onclick="addProductRow()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Agregar fila
+      </button>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" data-modal-close="modal-add-product">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="saveNewProducts()">Guardar productos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Entry -->
+<div id="modal-entry" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-entry-title" data-state="closed">
+  <div class="modal-dialog modal-lg modal-panel">
+    <div class="modal-header">
+      <h2 id="modal-entry-title" class="modal-title">Registrar Entrada</h2>
+      <p class="modal-description">Agrega una o más entradas de productos al inventario.</p>
+    </div>
+    <div class="modal-body">
+      <div class="table-wrapper entry-table-wrap" style="margin-top:8px; overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th class="text-left">Producto</th>
+              <th class="text-right">Cantidad</th>
+              <th class="text-left">Unidad</th>
+              <th class="text-left">Proveedor</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="entry-rows">
+            <tr data-row-id="1">
+              <td><select name="product" class="select-native" aria-label="Seleccionar producto"><option value="">Seleccionar producto...</option></select></td>
+              <td><input type="number" name="quantity" min="1" class="input" placeholder="0" aria-label="Cantidad"></td>
+              <td><span class="text-sm text-muted" id="entry-unit-1">—</span></td>
+              <td><select name="supplier" class="select-native" aria-label="Seleccionar proveedor"><option value="">Proveedor...</option></select></td>
+              <td><button type="button" class="btn btn-ghost btn-icon" onclick="removeEntryRow(1)" aria-label="Eliminar fila"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <button type="button" class="btn btn-ghost" style="margin-top:12px;" onclick="addEntryRow()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Agregar fila
+      </button>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" data-modal-close="modal-entry">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="confirmEntry()">Confirmar Entrada</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Exit -->
+<div id="modal-exit" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-exit-title" data-state="closed">
+  <div class="modal-dialog modal-lg modal-panel">
+    <div class="modal-header">
+      <h2 id="modal-exit-title" class="modal-title">Registrar Salida</h2>
+      <p class="modal-description">Registra la salida de productos del inventario.</p>
+    </div>
+    <div class="modal-body">
+      <div class="table-wrapper" style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th class="text-left">Producto</th>
+              <th class="text-right">Cantidad</th>
+              <th class="text-right">Stock disp.</th>
+              <th class="text-left">Destino</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="exit-rows">
+            <tr data-row-id="1">
+              <td><select name="product" class="select-native" aria-label="Seleccionar producto"><option value="">Seleccionar producto...</option></select></td>
+              <td><input type="number" name="quantity" min="1" class="input" placeholder="0" aria-label="Cantidad"></td>
+              <td><span class="text-sm text-muted" id="exit-stock-1">—</span></td>
+              <td><select name="destination" class="select-native" aria-label="Destino"><option value="">Destino...</option></select></td>
+              <td><button type="button" class="btn btn-ghost btn-icon" onclick="removeExitRow(1)" aria-label="Eliminar fila"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <button type="button" class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="addExitRow()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Agregar fila
+      </button>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" data-modal-close="modal-exit">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="confirmExit()">Confirmar salidas</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Waste (Merma) -->
+<div id="modal-waste" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-waste-title" data-state="closed">
+  <div class="modal-dialog modal-lg modal-panel">
+    <div class="modal-header">
+      <h2 id="modal-waste-title" class="modal-title">Registrar Merma</h2>
+      <p class="modal-description">Registra productos dañados o perdidos.</p>
+    </div>
+    <div class="modal-body">
+      <div class="table-wrapper" style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th class="text-left">Producto</th>
+              <th class="text-right">Cantidad</th>
+              <th class="text-left">Motivo</th>
+            </tr>
+          </thead>
+          <tbody id="waste-rows">
+            <tr data-row-id="1">
+              <td><select name="product" class="select-native" aria-label="Seleccionar producto"><option value="">Seleccionar producto...</option></select></td>
+              <td><input type="number" name="quantity" min="1" class="input" placeholder="0" aria-label="Cantidad"></td>
+              <td>
+                <select name="reason" class="select-native" aria-label="Motivo de merma">
+                  <option value="">Seleccionar motivo...</option>
+                  <option value="humedad">Daño por humedad</option>
+                  <option value="vencido">Producto vencido</option>
+                  <option value="rotura">Rotura accidental</option>
+                  <option value="robo">Robo o extravío</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="field" style="margin-top:16px;">
+        <label class="field-label" for="waste-notes">Notas adicionales (opcional)</label>
+        <textarea id="waste-notes" class="input" rows="3" placeholder=" "></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" data-modal-close="modal-waste">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="confirmWaste()">Confirmar merma</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="../scripts/sanitizers.js"></script>
+<script src="../scripts/storage-manager.js"></script>
+<script src="../scripts/api-client.js"></script>
+<script src="../scripts/services.js"></script>
+<script src="../scripts/store.js"></script>
+<script src="../scripts/layout.js"></script>
+<script src="../scripts/toast.js"></script>
+<script src="../scripts/modals.js"></script>
+<script src="../scripts/xml-importer.js"></script>
+<script src="../scripts/filter-engine.js"></script>
+<script src="../scripts/filter-chips.js"></script>
+<script src="../scripts/select-ui.js"></script>
+<script src="../scripts/movements.js"></script>
+<script src="../scripts/inventario.js"></script>
+</body>
+</html>

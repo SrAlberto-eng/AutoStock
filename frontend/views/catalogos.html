@@ -1,0 +1,269 @@
+<!--
+  Vista: Catálogos
+  Fuente React: app/catalogos/page.tsx
+  Descripción: Gestión de catálogos del sistema organizados en 3 pestañas:
+               Categorías, Unidades de medida y Áreas. Permite crear,
+               editar y eliminar entradas con confirmación mediante
+               AlertDialog.
+  Modales incluidos: modal-catalog (crear/editar), dialog-confirm-delete
+  Scripts requeridos: toast.js, layout.js, modals.js, catalogos.js
+-->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoStock — Catálogos</title>
+  <link rel="stylesheet" href="../styles/variables.css">
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="stylesheet" href="../styles/animations.css">
+</head>
+<body>
+
+<div id="app-layout">
+  <div id="mobile-overlay" class="mobile-overlay" aria-hidden="true"></div>
+
+  <!-- SIDEBAR -->
+  <aside id="app-sidebar" role="navigation" aria-label="Navegación principal">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></div>
+      <span class="sidebar-logo-text">AutoStock</span>
+    </div>
+    <nav>
+      <a href="dashboard.html" class="nav-item" title="Dashboard"><svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg><span class="nav-item-label">Dashboard</span></a>
+      <a href="inventario.html" class="nav-item" title="Inventario General"><svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg><span class="nav-item-label">Inventario General</span></a>
+      <a href="compras.html" class="nav-item" title="Lista de Compras"><svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg><span class="nav-item-label">Lista de Compras</span></a>
+      <a href="reportes.html" class="nav-item" title="Reportes"><svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg><span class="nav-item-label">Reportes</span></a>
+      <a href="usuarios.html" class="nav-item" title="Usuarios"><svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="nav-item-label">Usuarios</span></a>
+      <a href="catalogos.html" class="nav-item" title="Catálogos"><svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg><span class="nav-item-label">Catálogos</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <button id="sidebar-toggle" class="sidebar-toggle-btn" aria-label="Colapsar menú">
+        <span id="sidebar-toggle-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></svg></span>
+        <span id="sidebar-toggle-label">Colapsar</span>
+      </button>
+    </div>
+  </aside>
+  <script>try{var s=JSON.parse(localStorage.getItem('v1_ui_sidebar'));if(s&&s.collapsed)document.getElementById('app-sidebar').classList.add('collapsed');}catch(e){}</script>
+
+  <!-- MAIN -->
+  <div id="main-content">
+    <header id="top-bar" role="banner">
+      <div class="top-bar-left">
+        <button id="mobile-menu-btn" class="btn-menu" aria-label="Abrir menú" style="display:none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
+        <h1 class="top-bar-title">Catálogos</h1>
+      </div>
+      <div class="top-bar-right">
+        <div class="dropdown-wrapper" style="position:relative;">
+          <button id="profile-trigger" class="profile-trigger" aria-label="Menú de perfil" aria-haspopup="true" aria-expanded="false"><div class="avatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div></button>
+          <div id="profile-dropdown" class="dropdown-menu profile-menu hidden" role="menu">
+            <div class="profile-menu-header"><div class="avatar avatar-lg"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div><div class="font-medium text-sm"><!-- Admin --></div><div class="text-xs text-muted"><!-- admin@empresa.com --></div></div></div>
+            <hr class="separator">
+            <button class="dropdown-item" role="menuitem" onclick="modalManager.open('modal-profile')">Mi Perfil</button>
+            <hr class="separator">
+            <button class="dropdown-item dropdown-item-danger" role="menuitem" onclick="window.location.href='login.html'">Cerrar Sesión</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-body">
+
+      <!-- ── Catálogos card ────────────────────────────────── -->
+      <div class="card catalogs-card">
+
+        <!-- Tab bar integrada en la card -->
+        <div class="catalogs-tab-bar">
+          <div class="catalogs-tabs" role="tablist" aria-label="Secciones de catálogos">
+            <button id="tab-categorias" class="catalogs-tab tab-trigger active" role="tab" aria-selected="true" aria-controls="panel-categorias">Categorías</button>
+            <button id="tab-unidades" class="catalogs-tab tab-trigger" role="tab" aria-selected="false" aria-controls="panel-unidades">Unidades</button>
+            <button id="tab-areas" class="catalogs-tab tab-trigger" role="tab" aria-selected="false" aria-controls="panel-areas">Áreas</button>
+            <button id="tab-proveedores" class="catalogs-tab tab-trigger" role="tab" aria-selected="false" aria-controls="panel-proveedores">Proveedores</button>
+          </div>
+        </div>
+
+        <!-- ── Panel: Categorías ────────────────────────── -->
+        <div id="panel-categorias" class="tab-panel active" role="tabpanel" aria-labelledby="tab-categorias">
+          <div class="catalogs-panel-header">
+            <h3 class="text-base font-medium">Categorías de productos</h3>
+            <button class="btn btn-primary btn-sm" onclick="openCatalogModal('categoria')" aria-label="Agregar categoría">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Agregar
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table style="table-layout:fixed;">
+              <colgroup><col><col style="width:160px;"><col style="width:96px;"></colgroup>
+              <thead><tr><th class="text-left">Nombre</th><th class="text-center">Productos asociados</th><th></th></tr></thead>
+              <tbody id="categorias-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── Panel: Unidades ──────────────────────────── -->
+        <div id="panel-unidades" class="tab-panel" role="tabpanel" aria-labelledby="tab-unidades" aria-hidden="true" style="display:none;">
+          <div class="catalogs-panel-header">
+            <h3 class="text-base font-medium">Unidades de medida</h3>
+            <button class="btn btn-primary btn-sm" onclick="openCatalogModal('unidad')" aria-label="Agregar unidad">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Agregar
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table style="table-layout:fixed;">
+              <colgroup><col><col style="width:140px;"><col style="width:96px;"></colgroup>
+              <thead><tr><th class="text-left">Nombre</th><th class="text-left">Abreviatura</th><th></th></tr></thead>
+              <tbody id="unidades-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── Panel: Áreas ─────────────────────────────── -->
+        <div id="panel-areas" class="tab-panel" role="tabpanel" aria-labelledby="tab-areas" aria-hidden="true" style="display:none;">
+          <div class="catalogs-panel-header">
+            <h3 class="text-base font-medium">Áreas</h3>
+            <button class="btn btn-primary btn-sm" onclick="openCatalogModal('area')" aria-label="Agregar área">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Agregar
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table style="table-layout:fixed;">
+              <colgroup><col><col style="width:96px;"></colgroup>
+              <thead><tr><th class="text-left">Nombre</th><th></th></tr></thead>
+              <tbody id="areas-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── Panel: Proveedores ──────────────────────── -->
+        <div id="panel-proveedores" class="tab-panel" role="tabpanel" aria-labelledby="tab-proveedores" aria-hidden="true" style="display:none;">
+          <div class="catalogs-panel-header">
+            <h3 class="text-base font-medium">Proveedores</h3>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <label class="text-sm" style="display:flex; align-items:center; gap:6px; cursor:pointer; color:#A6A6A6;">
+                <input type="checkbox" id="chk-show-inactive-proveedores"> Mostrar inactivos
+              </label>
+              <button class="btn btn-primary btn-sm" onclick="openProveedorModal()" aria-label="Agregar proveedor">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Agregar
+              </button>
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table style="table-layout:fixed;">
+              <colgroup><col><col style="width:110px;"><col style="width:160px;"><col style="width:96px;"></colgroup>
+              <thead><tr><th class="text-left">Nombre</th><th class="text-center">Estado</th><th class="text-center">Productos asociados</th><th></th></tr></thead>
+              <tbody id="proveedores-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div><!-- /catalogs-card -->
+    </main>
+  </div><!-- /main-content -->
+</div><!-- /app-layout -->
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL: Catálogo (crear/editar genérico)
+     ══════════════════════════════════════════════════════ -->
+<div id="modal-catalog" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-catalog-title" data-state="closed">
+  <div class="modal-dialog modal-panel">
+    <div class="modal-header">
+      <h2 id="modal-catalog-title" class="modal-title">Nueva entrada</h2>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="catalog-editing-id" value="">
+      <input type="hidden" id="catalog-type" value="">
+
+      <!-- Fields container — JS shows/hides fields according to type -->
+      <div class="field-group">
+        <div class="field" id="field-catalog-name">
+          <label class="field-label" for="catalog-name">Nombre <span style="color:#FF6B6B;">*</span></label>
+          <input id="catalog-name" class="input" type="text" placeholder="Nombre del elemento"/>
+        </div>
+        <div class="field" id="field-catalog-description" style="display:none;">
+          <label class="field-label" for="catalog-description">Descripción</label>
+          <input id="catalog-description" class="input" type="text" placeholder="Descripción opcional">
+        </div>
+        <div class="field" id="field-catalog-abbreviation" style="display:none;">
+          <label class="field-label" for="catalog-abbreviation">Abreviatura</label>
+          <input id="catalog-abbreviation" class="input" type="text" placeholder="Ej: kg, pz, L" maxlength="10">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" data-modal-close="modal-catalog">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="saveCatalogItem()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── AlertDialog: Confirmación de eliminación ─────── -->
+<div id="dialog-confirm-delete" class="modal-backdrop hidden" role="alertdialog" aria-modal="true" aria-labelledby="dialog-delete-title" aria-describedby="dialog-delete-desc" data-state="closed">
+  <div class="modal-dialog alert-dialog-panel" style="max-width:440px;">
+    <div class="modal-header">
+      <h2 id="dialog-delete-title" class="modal-title" style="color:#FF6B6B;">Confirmar eliminación</h2>
+    </div>
+    <div class="modal-body">
+      <p id="dialog-delete-desc" class="text-sm" style="color:#A6A6A6;">
+        Esta acción eliminará la entrada de forma permanente.
+        <strong id="dialog-delete-name" style="color:#E6E6E6;"></strong>
+        Los productos asociados no serán eliminados, pero perderán esta referencia.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" data-modal-close="dialog-confirm-delete">Cancelar</button>
+      <button type="button" class="btn btn-destructive" onclick="executeDelete()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Proveedor (crear/editar) ──────────────── -->
+<div id="modal-proveedor" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-proveedor-title" data-state="closed">
+  <div class="modal-dialog modal-panel">
+    <div class="modal-header">
+      <h2 id="modal-proveedor-title" class="modal-title">Nuevo proveedor</h2>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="proveedor-editing-id" value="">
+      <div class="field">
+        <label class="field-label" for="proveedor-nombre">Nombre <span style="color:#FF6B6B;">*</span></label>
+        <input id="proveedor-nombre" class="input" type="text" placeholder="Nombre del proveedor">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" data-modal-close="modal-proveedor">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="saveProveedor()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── AlertDialog: Toggle proveedor ──────────────── -->
+<div id="dialog-confirm-toggle" class="modal-backdrop hidden" role="alertdialog" aria-modal="true" aria-labelledby="dialog-toggle-title" data-state="closed">
+  <div class="modal-dialog alert-dialog-panel" style="max-width:440px;">
+    <div class="modal-header">
+      <h2 id="dialog-toggle-title" class="modal-title">Confirmar</h2>
+    </div>
+    <div class="modal-body">
+      <p id="dialog-toggle-desc" class="text-sm" style="color:#A6A6A6;"></p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" data-modal-close="dialog-confirm-toggle">Cancelar</button>
+      <button type="button" id="btn-confirm-toggle" class="btn btn-primary">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="../scripts/sanitizers.js"></script>
+<script src="../scripts/storage-manager.js"></script>
+<script src="../scripts/api-client.js"></script>
+<script src="../scripts/services.js"></script>
+<script src="../scripts/store.js"></script>
+<script src="../scripts/layout.js"></script>
+<script src="../scripts/toast.js"></script>
+<script src="../scripts/modals.js"></script>
+<script src="../scripts/catalogos.js"></script>
+</body>
+</html>

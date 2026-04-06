@@ -1,0 +1,2 @@
+# Las revisiones de Alembic se generan aquí con:
+#   cd backend/ && alembic revision --autogenerate -m "descripcion"

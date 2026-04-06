@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoStock — Índice de vistas</title>
+  <link rel="stylesheet" href="styles/variables.css">
+  <link rel="stylesheet" href="styles/main.css">
+  <style>
+    body { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--color-background); }
+    .index-card { background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 40px 48px; max-width: 520px; width: 100%; }
+    .index-logo  { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .index-logo svg { color: var(--color-primary); }
+    .index-logo span { font-size: 1.25rem; font-weight: 700; color: var(--color-text); }
+    .index-subtitle { color: var(--color-text-muted); font-size: 0.875rem; margin-bottom: 28px; }
+    .index-section { margin-bottom: 20px; }
+    .index-section h2 { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-text-muted); margin-bottom: 10px; }
+    .index-links { display: flex; flex-direction: column; gap: 4px; }
+    .index-link { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: calc(var(--radius) * 0.67); text-decoration: none; color: var(--color-text); font-size: 0.875rem; transition: background 150ms ease; }
+    .index-link:hover { background: var(--color-card-hover, rgba(255,255,255,0.05)); }
+    .index-link svg { color: var(--color-primary); flex-shrink: 0; }
+    .index-link .link-badge { margin-left: auto; font-size: 0.7rem; padding: 2px 7px; background: rgba(90,169,255,0.12); color: var(--color-primary); border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="index-card">
+    <div class="index-logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>
+      </svg>
+      <span>AutoStock</span>
+    </div>
+    <p class="index-subtitle">export-ui — Vistas estáticas HTML/CSS/JS</p>
+
+    <div class="index-section">
+      <h2>Autenticación</h2>
+      <div class="index-links">
+        <a href="views/login.html" class="index-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>
+          Login
+          <span class="link-badge">views/login.html</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="index-section">
+      <h2>Vistas principales</h2>
+      <div class="index-links">
+        <a href="views/dashboard.html" class="index-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          Dashboard
+          <span class="link-badge">views/dashboard.html</span>
+        </a>
+        <a href="views/inventario.html" class="index-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+          Inventario General
+          <span class="link-badge">views/inventario.html</span>
+        </a>
+        <a href="views/compras.html" class="index-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+          Lista de Compras
+          <span class="link-badge">views/compras.html</span>
+        </a>
+        <a href="views/reportes.html" class="index-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
+          Reportes
+          <span class="link-badge">views/reportes.html</span>
+        </a>
+        <a href="views/usuarios.html" class="index-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Usuarios
+          <span class="link-badge">views/usuarios.html</span>
+        </a>
+        <a href="views/catalogos.html" class="index-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+          Catálogos
+          <span class="link-badge">views/catalogos.html</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="index-section">
+      <h2>Documentación</h2>
+      <div class="index-links">
+        <a href="README.md" class="index-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+          README.md
+          <span class="link-badge">Guía de uso</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
