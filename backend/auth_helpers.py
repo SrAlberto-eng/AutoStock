@@ -49,6 +49,7 @@ def get_current_user(request: Request) -> dict:
         "user_id": int(user_row["id"]),
         "role": str(user_row["role"]),
         "email": str(user_row["email"]),
+        "nombre": str(user_row["nombre"]),
     }
 
 

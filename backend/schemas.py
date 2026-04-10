@@ -47,7 +47,7 @@ class ApiResponse(BaseModel, Generic[T]):
 class LoginRequest(BaseModel):
     """Request body para POST /api/auth/login"""
 
-    email: str = Field(..., min_length=3, max_length=100, example="usuario@example.com")
+    identifier: str = Field(..., min_length=3, max_length=100, example="usuario@example.com")
     password: str = Field(..., min_length=1, example="micontraseña123")
 
 

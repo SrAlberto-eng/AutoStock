@@ -36,3 +36,6 @@ CLAUDE.md
 # Sistema operativo
 .DS_Store
 Thumbs.db
+
+#Server PID
+.server-pids

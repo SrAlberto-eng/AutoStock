@@ -13,7 +13,7 @@
   'use strict';
 
   var form         = document.getElementById('login-form');
-  var emailInput   = document.getElementById('email');
+  var identifierInput   = document.getElementById('identifier');
   var passInput    = document.getElementById('password');
   var toggleBtn    = document.getElementById('password-toggle');
   var iconEye      = document.getElementById('icon-eye');
@@ -25,10 +25,10 @@
   var rememberChk  = document.getElementById('remember-user');
   var showPassword = false;
 
-  // Restore remembered email
-  var savedEmail = localStorage.getItem('as_remember_email');
-  if (savedEmail && emailInput) {
-    emailInput.value = savedEmail;
+  // Restore remembered identifier
+  var savedIdentifier = localStorage.getItem('as_remember_identifier');
+  if (savedIdentifier && identifierInput) {
+    identifierInput.value = savedIdentifier;
     if (rememberChk) rememberChk.checked = true;
   }
 
@@ -54,10 +54,10 @@
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
 
-      var email    = emailInput ? emailInput.value.trim() : '';
+      var identifier = identifierInput ? identifierInput.value.trim() : '';
       var password = passInput  ? passInput.value.trim()  : '';
 
-      if (!email || !password) {
+      if (!identifier || !password) {
         showToast('Por favor, completa todos los campos', 'error');
         return;
       }
@@ -71,7 +71,7 @@
         }
 
         var result = await window.apiClient.post('/auth/login', {
-          email: email,
+          identifier: identifier,
           password: password
         });
 
@@ -93,9 +93,9 @@
 
         // Remember user
         if (rememberChk && rememberChk.checked) {
-          localStorage.setItem('as_remember_email', email);
+          localStorage.setItem('as_remember_identifier', identifier);
         } else {
-          localStorage.removeItem('as_remember_email');
+          localStorage.removeItem('as_remember_identifier');
         }
 
         if (data.debe_cambiar_password === true) {

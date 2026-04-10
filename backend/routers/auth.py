@@ -38,7 +38,9 @@ async def login(request: LoginRequest, http_request: Request):
         return error_response(429, "Demasiados intentos. Espera un minuto.")
     _login_attempts[ip].append(ahora)
 
-    email = sanitize_string(request.email, 255, "email").lower()
+    ## Cambiar logica para autennticar por email o email 
+    ## Despues migrar a sólo autenticar por email
+    identifier = sanitize_string(request.identifier, 255, "identifier").lower()
     password = str(request.password or "")
 
     if not password:
@@ -47,7 +49,7 @@ async def login(request: LoginRequest, http_request: Request):
     engine = get_engine()
 
     with engine.begin() as conn:
-        user_row = auth_repo.find_active_user_by_email(conn, email)
+        user_row = auth_repo.find_active_user_by_identifier(conn, identifier)
 
         if user_row:
             bloqueado = user_row["bloqueado_hasta"]
@@ -61,6 +63,7 @@ async def login(request: LoginRequest, http_request: Request):
                 )
 
         valid_password = False
+
         if user_row:
             valid_password = bcrypt.checkpw(
                 password.encode("utf-8"),
@@ -68,9 +71,9 @@ async def login(request: LoginRequest, http_request: Request):
             )
 
         if not user_row or not valid_password:
-            auth_repo.record_login_attempt(conn, email, now)
+            auth_repo.record_login_attempt(conn, identifier, now)
             recent_attempts = auth_repo.count_recent_attempts(
-                conn, email, now - timedelta(minutes=15)
+                conn, identifier, now - timedelta(minutes=15)
             )
 
             if user_row and recent_attempts > 5:
@@ -82,7 +85,7 @@ async def login(request: LoginRequest, http_request: Request):
 
             return error_response(401, "Credenciales incorrectas")
 
-        auth_repo.clear_login_attempts(conn, email)
+        auth_repo.clear_login_attempts(conn, identifier)
 
         exp_dt = now + timedelta(hours=8)
         must_change_password = bool(user_row.get("debe_cambiar_password"))
@@ -104,6 +107,7 @@ async def login(request: LoginRequest, http_request: Request):
         "user_id": user_row["id"],
         "nombre": user_row["nombre"],
     }
+
     if must_change_password:
         login_data["debe_cambiar_password"] = True
 

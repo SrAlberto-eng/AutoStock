@@ -26,6 +26,27 @@ def find_active_user_by_email(conn, email: str) -> dict | None:
     return dict(row) if row else None
 
 
+def find_active_user_by_identifier(conn, identifier: str) -> dict  | None:
+    row = conn.execute(
+        text(
+            """
+            SELECT u.id, u.nombre, u.email, u.password_hash,
+                u.bloqueado_hasta, u.debe_cambiar_password,
+                r.nombre AS role
+            FROM usuarios u
+            JOIN roles r ON r.id = u.role_id
+            WHERE (lower(u.email)  = lower(:identifier)
+            OR lower(u.nombre) = lower(:identifier))
+            AND u.activo = 1
+            LIMIT 1
+            """
+        ),
+        {"identifier": identifier},
+    ).mappings().first()
+    return dict(row) if row else None
+
+
+
 def validate_session(conn, token_hash: str, ahora: datetime) -> dict | None:
     session_row = conn.execute(
         text(
@@ -44,7 +65,7 @@ def get_user_by_id_with_role(conn, user_id: int) -> dict | None:
     row = conn.execute(
         text(
             """
-            SELECT u.id, u.email, r.nombre AS role
+            SELECT u.id, u.nombre, u.email, r.nombre AS role
             FROM usuarios u
             JOIN roles r ON r.id = u.role_id
             WHERE u.id = :user_id AND u.activo = 1
@@ -123,10 +144,10 @@ def lock_user(conn, user_id: int, until: datetime):
     )
 
 
-def clear_login_attempts(conn, email: str):
+def clear_login_attempts(conn, identifier: str):
     conn.execute(
-        text("DELETE FROM login_attempts WHERE lower(email) = lower(:email)"),
-        {"email": email},
+        text("DELETE FROM login_attempts WHERE lower(email) = lower(:identifier)"),
+        {"identifier": identifier},
     )
 
 
