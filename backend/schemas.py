@@ -307,13 +307,17 @@ class DashboardResumenResponse(BaseModel):
 class ProveedorCreateRequest(BaseModel):
     """Request para POST /api/proveedores"""
 
-    nombre: str = Field(..., min_length=1, max_length=100)
+    nombre: Optional[str] = Field(..., min_length=1, max_length=100)
+    email: Optional[str] = Field(..., min_length=1, max_length=100)
+    telefono: Optional[str] = Field(..., min_length=1, max_length=100)
 
 
 class ProveedorUpdateRequest(BaseModel):
     """Request para PATCH /api/proveedores/{id}"""
 
     nombre: Optional[str] = Field(None, min_length=1, max_length=100)
+    email: Optional[str] = Field(None, min_length=1, max_length=100)
+    telefono: Optional[str] = Field(None, min_length=1, max_length=100)
 
 
 class ProveedorResponse(BaseModel):
@@ -321,6 +325,8 @@ class ProveedorResponse(BaseModel):
 
     id: int
     nombre: str
+    email: Optional[str]
+    telefono: Optional[str]
     activo: bool
     productos_asociados: int = 0
 

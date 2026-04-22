@@ -9,6 +9,8 @@ from http_helpers import error_response, current_user_id
 from repositories import audit_repo, proveedores_repo
 from repositories.base import now_utc
 from sanitizers import sanitize_string
+from validators import validate_email
+from fastapi import HTTPException
 from schemas import (
     ApiResponse,
     ProveedorCreateRequest,
@@ -49,24 +51,26 @@ async def create_proveedor(request_body: ProveedorCreateRequest, request: Reques
     require_role(request, ["administrador", "gerente"])
     usuario_id = current_user_id(request)
     nombre = sanitize_string(request_body.nombre, 100, "nombre")
+    email = sanitize_string(request_body.email, 100, "email")
+    telefono = sanitize_string(request_body.telefono, 100, "telefono") if request_body.telefono else None
 
     try:
         with get_engine().begin() as conn:
-            new_id = proveedores_repo.create_proveedor(conn, nombre)
+            new_id = proveedores_repo.create_proveedor(conn, nombre, email, telefono)
             audit_repo.log_audit(
                 conn,
                 usuario_id=usuario_id,
                 accion="CREATE",
                 entidad="proveedores",
                 entidad_id=new_id,
-                detalle={"nombre": nombre},
+                detalle={"nombre": nombre, "email": email, "telefono": telefono},
             )
     except IntegrityError:
         return error_response(409, "Ya existe un proveedor con ese nombre")
 
     return ApiResponse[ProveedorResponse](
         success=True,
-        data=ProveedorResponse(id=new_id, nombre=nombre, activo=True, productos_asociados=0),
+        data=ProveedorResponse(id=new_id, nombre=nombre, email=email, telefono=telefono, activo=True, productos_asociados=0),
         error=None,
         timestamp=now_utc(),
     )
@@ -80,18 +84,25 @@ async def update_proveedor(
 ):
     require_role(request, ["administrador", "gerente"])
 
-    if request_body.nombre is None:
+    if (request_body.nombre) is None and (request_body.email) is None and (request_body.telefono) is None:
         return error_response(400, "No hay campos para actualizar")
 
-    nombre = sanitize_string(request_body.nombre, 100, "nombre")
+    nombre = sanitize_string(request_body.nombre, 100, "nombre").lower()
 
+    email = sanitize_string(request_body.email, 100, "email").lower()
+
+    if not validate_email(email):
+        raise HTTPException(status_code=400, detail="Formato de email inválido")
+    
+    telefono = sanitize_string(request_body.telefono, 100, "telefono") if request_body.telefono else None                                                                                                                                                           
+    
     try:
         with get_engine().begin() as conn:
             existing = proveedores_repo.get_by_id(conn, proveedor_id)
             if not existing:
                 return error_response(404, "Proveedor no encontrado")
 
-            proveedores_repo.update_proveedor(conn, proveedor_id, nombre)
+            proveedores_repo.update_proveedor(conn, proveedor_id, nombre, email, telefono)
             updated = proveedores_repo.get_by_id(conn, proveedor_id)
 
             audit_repo.log_audit(
@@ -100,7 +111,7 @@ async def update_proveedor(
                 accion="UPDATE",
                 entidad="proveedores",
                 entidad_id=proveedor_id,
-                detalle={"nombre": nombre},
+                detalle={"nombre": nombre, "email": email, "telefono": telefono},
             )
     except IntegrityError:
         return error_response(409, "Ya existe un proveedor con ese nombre")
@@ -113,6 +124,8 @@ async def update_proveedor(
         data=ProveedorResponse(
             id=updated["id"],
             nombre=updated["nombre"],
+            email=updated["email"],
+            telefono=updated["telefono"],
             activo=bool(updated["activo"]),
             productos_asociados=linked,
         ),
@@ -152,6 +165,8 @@ async def toggle_proveedor(request: Request, proveedor_id: int = Path(..., gt=0)
         data=ProveedorResponse(
             id=updated["id"],
             nombre=updated["nombre"],
+            email=updated["email"],
+            telefono=updated["telefono"],
             activo=bool(updated["activo"]),
             productos_asociados=linked,
         ),
