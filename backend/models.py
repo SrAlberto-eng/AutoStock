@@ -61,12 +61,16 @@ unidades_medida = Table(
     Column("abreviacion", Text, nullable=False),
 )
 
+
+# New Feature: Implementar datos de contacto a los proveedores (email y telefono)
 proveedores = Table(
     "proveedores",
     metadata,
     Column("id", Integer, primary_key=True, autoincrement=True),
     Column("nombre", Text, nullable=False, unique=True),
     Column("activo", Integer, nullable=False, server_default="1"),
+    Column("email", Text, nullable=True, unique=True),
+    Column("telefono", Text, nullable=True, unique=True),
 )
 
 # ---------------------------------------------------------------------------

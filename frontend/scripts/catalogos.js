@@ -7,7 +7,7 @@
 
 // Fila pendiente de eliminación
 let pendingDeleteRow = null;
-var proveedoresData = [];
+var proveedoresData = []; 
 var pendingToggleId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -318,6 +318,8 @@ function renderProveedores(items) {
   tbody.innerHTML = safeItems.map(function (item) {
     var id = window.escapeHtml(String(item.id || ''));
     var nombre = window.escapeHtml(item.nombre || '');
+    var email = window.escapeHtml(item.email || '');
+    var telefono = window.escapeHtml(item.telefono || '');
     var activo = item.activo !== false && item.activo !== 0;
     var productos = window.escapeHtml(String(item.productos_asociados || 0));
     var badgeClass = activo ? 'badge-success' : 'badge-muted';
@@ -330,6 +332,8 @@ function renderProveedores(items) {
 
     return '<tr data-id="' + id + '" data-nombre="' + nombre + '"' + rowStyle + '>'
       + '<td>' + nombre + '</td>'
+      + '<td>' + email + '</td>'
+      + '<td>' + telefono + '</td>'
       + '<td class="text-center"><span class="badge ' + badgeClass + '">' + badgeText + '</span></td>'
       + '<td class="td-num">' + productos + '</td>'
       + '<td class="td-actions">'
@@ -347,6 +351,8 @@ function renderProveedores(items) {
 function openProveedorModal() {
   document.getElementById('proveedor-editing-id').value = '';
   document.getElementById('proveedor-nombre').value = '';
+  document.getElementById('proveedor-email').value = '';
+  document.getElementById('proveedor-telefono').value = '';
   document.getElementById('modal-proveedor-title').textContent = 'Nuevo proveedor';
   modalManager.open('modal-proveedor');
   setTimeout(function () { document.getElementById('proveedor-nombre').focus(); }, 100);
@@ -357,6 +363,8 @@ function editProveedor(id) {
   if (!item) return;
   document.getElementById('proveedor-editing-id').value = String(id);
   document.getElementById('proveedor-nombre').value = item.nombre || '';
+  document.getElementById('proveedor-email').value = item.email || '';
+  document.getElementById('proveedor-telefono').value = item.telefono || '';
   document.getElementById('modal-proveedor-title').textContent = 'Editar proveedor';
   modalManager.open('modal-proveedor');
   setTimeout(function () { document.getElementById('proveedor-nombre').focus(); }, 100);
@@ -364,19 +372,23 @@ function editProveedor(id) {
 
 async function saveProveedor() {
   var nombre = document.getElementById('proveedor-nombre').value.trim();
+  var email = document.getElementById('proveedor-email').value.trim();
+  var telefono = document.getElementById('proveedor-telefono').value.trim();
   var id = document.getElementById('proveedor-editing-id').value;
+
   if (!nombre) {
     showToast('El nombre es requerido', 'error');
     document.getElementById('proveedor-nombre').focus();
     return;
   }
+
   try {
     store.setState({ ui: { loading: true } });
     if (id) {
-      await window.ProviderService.update(parseInt(id, 10), { nombre: nombre });
+      await window.ProviderService.update(parseInt(id, 10), { nombre: nombre, email: email, telefono: telefono});
       showToast('Proveedor actualizado', 'success');
     } else {
-      await window.ProviderService.create({ nombre: nombre });
+      await window.ProviderService.create({ nombre: nombre, email: email, telefono: telefono });
       showToast('Proveedor creado', 'success');
     }
     modalManager.close('modal-proveedor');
