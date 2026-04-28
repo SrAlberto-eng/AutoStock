@@ -129,18 +129,21 @@ def toggle_activo(conn, product_id: int, nuevo_estado: int):
     )
 
 
-def get_product_history(conn, product_id: int, limit: int = 20) -> list[dict]:
+def get_product_history(conn, producto_id: int, limit: int = 20) -> list[dict]:
     rows = conn.execute(
         text(
             """
-            SELECT id, tipo, cantidad, fecha_sistema, usuario_id, motivo, revertido
-            FROM movimientos
-            WHERE producto_id = :product_id
-            ORDER BY fecha_sistema DESC
+            SELECT m.id, m.tipo, m.cantidad, m.fecha_sistema,
+                   m.usuario_id, u.nombre AS usuario_nombre,
+                   m.motivo, m.revertido
+            FROM movimientos m
+            LEFT JOIN usuarios u ON m.usuario_id = u.id
+            WHERE m.producto_id = :producto_id
+            ORDER BY m.fecha_sistema DESC
             LIMIT :limit
             """
         ),
-        {"product_id": product_id, "limit": limit},
+        {"producto_id": producto_id, "limit": limit},
     ).mappings().all()
     return [dict(r) for r in rows]
 

@@ -214,6 +214,7 @@ async def get_product_detail(product_id: int = Path(..., gt=0)):
             "cantidad": float(h["cantidad"]),
             "fecha_sistema": to_datetime(h["fecha_sistema"]).isoformat(),
             "usuario_id": h["usuario_id"],
+            "usuario_nombre": h.get("usuario_nombre"),
             "motivo": h["motivo"],
             "revertido": bool(h["revertido"]),
         }

@@ -293,7 +293,7 @@ function renderHistorialEnModal(historial) {
     const qty = Number(mov.cantidad || 0);
     const qtyLabel = (tipo === 'entrada' ? '+' : '-') + Math.abs(qty);
     const fecha = mov.fecha_sistema ? String(mov.fecha_sistema).slice(0, 10) : '';
-    const usuario = mov.usuario_id != null ? 'Usuario #' + mov.usuario_id : '-';
+    const usuario = mov.usuario_nombre || (mov.usuario_id != null ? 'Usuario ID: ' + mov.usuario_id : '-')
 
     return '<tr>' +
       '<td>' + escapeHtmlSafe(fecha) + '</td>' +
