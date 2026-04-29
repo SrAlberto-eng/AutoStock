@@ -20,6 +20,53 @@
   var sidebar, mainContent, mobileOverlay, toggleBtn, toggleLabel,
       toggleIcon, mobileMenuBtn, profileTrigger, profileDropdown;
 
+
+  /* Arreglo de connfiguracion de los módulos del sidebar */
+  const MENU_ITEMS = [
+    {
+      id: 'dashboard',
+      href: 'dashboard.html',
+      label: 'Dashboard',
+      icon: '<svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>',
+      route: '/dashboard'
+    },
+    {
+      id: 'inventario',
+      href: 'inventario.html',
+      label: 'Inventario General',
+      icon: '<svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>',
+      route: '/inventario'
+    },
+    {
+      id: 'compras',
+      href: 'compras.html',
+      label: 'Lista de Compras',
+      icon: '<svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>',
+      route: '/compras'
+    },
+    {
+      id: 'reportes',
+      href: 'reportes.html',
+      label: 'Reportes',
+      icon: '<svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>',
+      route: '/reportes'
+    },
+    {
+      id: 'usuarios',
+      href: 'usuarios.html',
+      label: 'Usuarios',
+      icon: '<svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+      route: '/usuarios'
+    },
+    {
+      id: 'catalogos',
+      href: 'catalogos.html',
+      label: 'Catálogos',
+      icon: '<svg class="nav-item-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>',
+      route: '/catalogos'
+    },
+  ]
+
   /* ════════════════════════════════════════════════════════
      SIDEBAR
      ════════════════════════════════════════════════════════ */
@@ -274,26 +321,31 @@
     };
 
     var normalizedRole = String(role || '').trim().toLowerCase();
-    var rolesValidos = ['administrador', 'gerente', 'encargado_area', 'encargado_compras'];
-    if (rolesValidos.indexOf(normalizedRole) === -1) {
-      localStorage.removeItem('as_token');
-      localStorage.removeItem('as_expires_at');
-      localStorage.removeItem('as_role');
-      localStorage.removeItem('as_nombre');
-      localStorage.removeItem('as_email');
-      window.location.href = '../views/login.html';
+    if (['administrador', 'gerente', 'encargado_area', 'encargado_compras'].indexOf(normalizedRole) === -1 ) {
+      doLogout();
       return false;
     }
 
     var allowedRoutes = allowedByRole[normalizedRole];
+    var navContainer = document.getElementById('sidebar-nav');
 
-    document.querySelectorAll('#app-sidebar .nav-item').forEach(function (link) {
-      var href = link.getAttribute('href') || '';
-      var route = normalizeRoute(href);
-      var isAllowed = allowedRoutes.indexOf(route) !== -1;
-      link.style.display = isAllowed ? '' : 'none';
-    });
+    // 1. Limpiamos sidebar
+    if (navContainer) navContainer.innerHTML = '';
 
+    // 2. Insertamos solo los nav items permitidos en base al rol
+    MENU_ITEMS.forEach(function(item) {
+      if (allowedRoutes.indexOf(item.route) != -1) {
+        var link = document.createElement('a');
+        link.href = item.href;
+        link.className = 'nav-item';
+        link.title = item.label;
+        link.innerHTML = item.icon + '<span class="nav-item-label">' + item.label + '</span>';
+
+        if (navContainer) navContainer.appendChild(link);
+      }
+    })
+
+    // 3. Comprobar si está en una ruta no permitida y redirigir 
     var currentRoute = currentRouteName();
     if (currentRoute && currentRoute !== '/' && allowedRoutes.indexOf(currentRoute) === -1) {
       window.location.href = firstAllowedRoute(allowedRoutes);
@@ -508,7 +560,16 @@
 
       if (me.nombre) localStorage.setItem('as_nombre', me.nombre);
       if (me.email) localStorage.setItem('as_email', me.email);
-      if (me.role) localStorage.setItem('as_role', me.role);
+      
+      var oldRole = localStorage.getItem('as_role');
+      if (me.role) {
+        localStorage.setItem('as_role', me.role);
+        // Si el rol guardado estaba desincronizado (o modificado manualmente), reevaluamos los permisos:
+        if (oldRole !== me.role) {
+          applyNavPermissions(me.role);
+          initActiveNav();
+        }
+      }
 
       setUserInTopbar({
         nombre: me.nombre || '',
@@ -577,11 +638,9 @@
     initProfileDropdown();
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  // Ejecutamos inicialización de inmediato (ya que layout.js carga al final del body)
+  // Esto evita el parpadeo (FOUC) provocado por esperar a DOMContentLoaded
+  init();
 
   async function initPageData() {
     try {
