@@ -35,6 +35,8 @@ def seed_default_admin(conn) -> None:
     total_users = conn.execute(text("SELECT COUNT(*) FROM usuarios")).scalar_one()
     if total_users > 0:
         return
+    
+    seed_default_catalog(conn)
 
     role_id = conn.execute(
         text("SELECT id FROM roles WHERE nombre = :nombre LIMIT 1"),
@@ -73,6 +75,66 @@ def seed_default_admin(conn) -> None:
             "created_at": datetime.utcnow(),
         },
     )
+
+def seed_default_catalog(conn) -> None:
+    """ Insercion de unidades de medida, areas y categorías iniciales del sistema """
+    unidades = [
+        ("Kilogramo", "kg"),
+        ("Litro", "L"),
+        ("Mililitro", "mL"),
+        ("Pieza","PZA"),
+        ("Unidad", "U"),
+        ("Caja", "caja"),
+        ("Paquete", "paq"),
+        ("Gramo", "g"),
+        ("Galón", "Gal"),
+        ("Docena","dz"),
+        ("Bulto", ""),
+    ]
+    
+    areas = ("Cocina", 
+             "Almacén general",
+             "Barra", 
+             "Área de limpieza",  
+             "Área administrativa",
+             "Área de mantenimiento",
+    )
+    
+    categorias = ("Productos de limpieza", 
+                  "Materias primas",
+                  "Bebidas",
+                  "Almacén general",
+                  "Equipo",
+                  "Utensilios",
+                  "Misceláneos",
+    )
+    
+    
+    for nombre, abreviacion in unidades:
+        conn.execute(
+            text("INSERT OR IGNORE INTO unidades_medida (nombre, abreviacion)"
+                 "VALUES (:nombre, :abreviacion)"
+                 ),
+            {"nombre":nombre, "abreviacion":abreviacion},
+        )
+        
+        
+    for nombre in areas:
+        conn.execute(
+            text("INSERT OR IGNORE INTO areas (nombre)"
+                 "VALUES (:nombre)"
+                 ),
+            {"nombre":nombre},
+        )
+        
+        
+    for nombre in categorias:
+        conn.execute(
+            text("INSERT OR IGNORE INTO categorias (nombre)"
+                 "VALUES (:nombre)"
+                 ),
+            {"nombre":nombre}
+        )
 
 
 @asynccontextmanager
