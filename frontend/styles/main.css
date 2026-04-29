@@ -148,6 +148,11 @@ img, svg {
   gap: 4px;
 }
 
+#app-sidebar:not(.sidebar-ready) .nav-item {
+  display: none !important;
+}
+
+
 .nav-item {
   display: flex;
   align-items: center;
