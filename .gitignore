@@ -29,6 +29,7 @@ backend/.env
 # Archivos internos del agente de IA y del IDE
 .agent/
 CLAUDE.md
+graphify-out/
 .cursor/
 .vscode/
 *.idea/
