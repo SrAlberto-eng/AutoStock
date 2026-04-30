@@ -5,6 +5,15 @@ function Info  { param($msg) Write-Host "[AutoStock] $msg" -ForegroundColor Gree
 function Warn  { param($msg) Write-Host "[AutoStock] $msg" -ForegroundColor Yellow }
 function Error { param($msg) Write-Host "[AutoStock] $msg" -ForegroundColor Red }
 
+# ── Resolver Python (venv local tiene prioridad sobre PATH) ───────────────
+$VenvPython = Join-Path $ScriptDir ".venv\Scripts\python.exe"
+if (Test-Path $VenvPython) {
+    $Python = $VenvPython
+} else {
+    $Python = "python"
+    Warn "No se encontro .venv — usando python del sistema. Ejecuta: python -m venv .venv && .venv\Scripts\pip install -r backend\requirements.txt"
+}
+
 # ── Verificar puertos libres ───────────────────────────────────────────────
 function Test-Port {
     param($port)
@@ -18,13 +27,13 @@ if (Test-Port 5500) { Error "Puerto 5500 ya en uso. Ejecuta stop.ps1 primero."; 
 
 # ── Arrancar backend ───────────────────────────────────────────────────────
 Info "Arrancando backend (puerto 8765)..."
-$backend = Start-Process python -ArgumentList "main.py" `
+$backend = Start-Process $Python -ArgumentList "main.py" `
     -WorkingDirectory (Join-Path $ScriptDir "backend") `
     -PassThru -WindowStyle Minimized
 
 # ── Arrancar frontend ──────────────────────────────────────────────────────
 Info "Arrancando frontend (puerto 5500)..."
-$frontend = Start-Process python -ArgumentList "-m", "http.server", "5500", "--bind", "127.0.0.1" `
+$frontend = Start-Process $Python -ArgumentList "-m", "http.server", "5500", "--bind", "127.0.0.1" `
     -WorkingDirectory (Join-Path $ScriptDir "frontend") `
     -PassThru -WindowStyle Minimized
 

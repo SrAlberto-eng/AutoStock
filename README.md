@@ -133,30 +133,14 @@ cd AutoStock
 
 ## Configuracion de entorno
 
-Puedes trabajar de dos formas:
-
-1. Entorno virtual dentro del repo (estandar):
+Crea el entorno virtual en la raiz del repositorio e instala las dependencias:
 
 ```bash
 python -m venv .venv
+.\.venv\Scripts\pip install -r backend\requirements.txt
 ```
 
-2. Entorno virtual fuera del repo (tu flujo actual), por ejemplo en carpeta padre.
-
-En ambos casos, activa el entorno antes de ejecutar scripts o backend.
-
-Windows (PowerShell):
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-```
-
-Instalar dependencias:
-
-```bash
-cd backend
-python -m pip install -r requirements.txt
-```
+`start.ps1` detecta automaticamente el `.venv` local, por lo que no es necesario activarlo manualmente antes de ejecutar los scripts.
 
 ## Como ejecutar
 
