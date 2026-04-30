@@ -1,4 +1,4 @@
-# Entorno virtual (vive un nivel arriba, nunca se versiona)
+# Entorno virtual
 .venv/
 
 # Base de datos local
@@ -22,7 +22,7 @@ backend/logs/
 backend/backend/logs/
 backend/backend/backups/
 
-# Variables de entorno (contienen secretos)
+# Variables de entorno
 .env
 backend/.env
 
