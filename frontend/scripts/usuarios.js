@@ -13,6 +13,8 @@ const ROLE_OPTIONS = [
   { value: 'encargado_area', label: 'Encargado de área' },
   { value: 'encargado_compras', label: 'Encargado de compras' },
 ];
+const rolSelect = document.getElementById('user-role');
+const areaSelect = document.getElementById('user-area');
 
 function getCurrentRole() {
   return String(localStorage.getItem('as_role') || '').trim().toLowerCase();
@@ -327,6 +329,14 @@ function openUserModal() {
   if (passSection) passSection.style.display = 'block';
   modalManager.open('modal-user');
 }
+
+rolSelect.addEventListener('change', () => {
+  if (rolSelect.value == "administrador"){
+    areaSelect.disabled = true;
+    areaSelect.selectedIndex = 0;
+  } else areaSelect.disabled = false;
+})
+
 
 // ── Open modal to edit existing user ──────────────────────────────────────
 function editUser(btn) {
