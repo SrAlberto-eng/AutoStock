@@ -17,6 +17,14 @@
   <link rel="stylesheet" href="../styles/variables.css">
   <link rel="stylesheet" href="../styles/main.css">
   <link rel="stylesheet" href="../styles/animations.css">
+  <script>
+  try {
+    var savedTheme = JSON.parse(localStorage.getItem('v1_ui_theme')) || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  } catch(e) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+  </script>
 </head>
 <body style="background-color:#0B0D0F;">
 

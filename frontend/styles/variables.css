@@ -75,3 +75,40 @@
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'Geist Mono', 'Courier New', monospace;
 }
+
+:root[data-theme="light"] {
+  /* ─── Fondos ─────────────────────────────────────── */
+  --background:           #FFFFFF;
+  --background-secondary: #F8F9FA;
+  --background-panel:     #F1F3F5;
+
+  /* ─── Texto ──────────────────────────────────────── */
+  --foreground:           #09090B; /* Casi negro */
+  --foreground-muted:     #717171; /* Gris medio */
+
+  /* ─── Divisores ──────────────────────────────────── */
+  --divider:              #E4E4E7;
+
+  /* ─── Tokens de componentes (shadcn compat) ──────── */
+  --card:                 #FFFFFF;
+  --card-foreground:      #09090B;
+  --popover:              #FFFFFF;
+  --popover-foreground:   #09090B;
+  --primary:              #5AA9FF; 
+  --primary-foreground:   #FFFFFF;
+  --secondary:            #F1F3F5;
+  --secondary-foreground: #09090B;
+  --muted:                #F8F9FA;
+  --muted-foreground:     #717171;
+  --border:               #E4E4E7;
+  --input:                #FFFFFF;
+
+  /* ─── Sidebar ────────────────────────────────────── */
+  --sidebar:                    #F8F9FA;
+  --sidebar-foreground:         #09090B;
+  --sidebar-accent:             #E4E4E7;
+  --sidebar-accent-foreground:  #09090B;
+  --sidebar-border:             #E4E4E7;
+}
+
+

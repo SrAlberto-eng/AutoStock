@@ -19,6 +19,14 @@
   <link rel="stylesheet" href="../styles/variables.css">
   <link rel="stylesheet" href="../styles/main.css">
   <link rel="stylesheet" href="../styles/animations.css">
+  <script>
+  try {
+    var savedTheme = JSON.parse(localStorage.getItem('v1_ui_theme')) || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  } catch(e) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+  </script>
 </head>
 <body>
 
@@ -57,8 +65,8 @@
         </button>
         <h1 class="top-bar-title">Dashboard</h1>
       </div>
-      <div class="top-bar-right">
-        <!-- Profile dropdown -->
+      <div class="top-bar-right" style="display: flex; align-items: center; gap: 12px;">
+        <button id="theme-toggle" class="btn btn-icon" aria-label="Alternar modo de color" style="background: transparent; color: var(--foreground-muted); cursor: pointer; padding: 6px;"><svg></svg></button>
         <div class="dropdown-wrapper" style="position:relative;">
           <button id="profile-trigger" class="profile-trigger" aria-label="Menú de perfil" aria-haspopup="true" aria-expanded="false">
             <div class="avatar">
