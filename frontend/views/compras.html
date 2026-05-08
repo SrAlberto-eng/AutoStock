@@ -83,15 +83,15 @@
           </select>
         </div>
         <div style="display:flex; gap:8px; margin-left:auto; flex-shrink:0;">
-          <button class="btn btn-outline btn-sm" onclick="loadCompras()" aria-label="Actualizar lista">
+          <button id="btn-refresh-compras" class="btn btn-outline btn-sm" aria-label="Actualizar lista">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             Actualizar
           </button>
-          <button class="btn btn-outline btn-sm" onclick="printCompras()" aria-label="Imprimir lista">
+          <button id="btn-print-compras" class="btn btn-outline btn-sm" aria-label="Imprimir lista">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
             Imprimir
           </button>
-          <button class="btn btn-primary btn-sm" onclick="exportPDF()" aria-label="Exportar como PDF">
+          <button id="btn-export-pdf" class="btn btn-primary btn-sm" aria-label="Exportar como PDF">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
             Exportar PDF
           </button>

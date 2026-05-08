@@ -88,7 +88,7 @@
         <div id="panel-categorias" class="tab-panel active" role="tabpanel" aria-labelledby="tab-categorias">
           <div class="catalogs-panel-header">
             <h3 class="text-base font-medium">Categorías de productos</h3>
-            <button class="btn btn-primary btn-sm" onclick="openCatalogModal('categoria')" aria-label="Agregar categoría">
+            <button id="btn-add-categoria" class="btn btn-primary btn-sm" aria-label="Agregar categoría">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Agregar
             </button>
@@ -106,7 +106,7 @@
         <div id="panel-unidades" class="tab-panel" role="tabpanel" aria-labelledby="tab-unidades" aria-hidden="true" style="display:none;">
           <div class="catalogs-panel-header">
             <h3 class="text-base font-medium">Unidades de medida</h3>
-            <button class="btn btn-primary btn-sm" onclick="openCatalogModal('unidad')" aria-label="Agregar unidad">
+            <button id="btn-add-unidad" class="btn btn-primary btn-sm" aria-label="Agregar unidad">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Agregar
             </button>
@@ -124,7 +124,7 @@
         <div id="panel-areas" class="tab-panel" role="tabpanel" aria-labelledby="tab-areas" aria-hidden="true" style="display:none;">
           <div class="catalogs-panel-header">
             <h3 class="text-base font-medium">Áreas</h3>
-            <button class="btn btn-primary btn-sm" onclick="openCatalogModal('area')" aria-label="Agregar área">
+            <button id="btn-add-area" class="btn btn-primary btn-sm" aria-label="Agregar área">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Agregar
             </button>
@@ -146,7 +146,7 @@
               <label class="text-sm text-muted" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
                 <input type="checkbox" id="chk-show-inactive-proveedores"> Mostrar inactivos
               </label>
-              <button class="btn btn-primary btn-sm" onclick="openProveedorModal()" aria-label="Agregar proveedor">
+              <button id="btn-add-proveedor" class="btn btn-primary btn-sm" aria-label="Agregar proveedor">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Agregar
               </button>
@@ -196,7 +196,7 @@
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-outline" data-modal-close="modal-catalog">Cancelar</button>
-      <button type="button" class="btn btn-primary" onclick="saveCatalogItem()">Guardar</button>
+      <button type="button" id="btn-save-catalog" class="btn btn-primary">Guardar</button>
     </div>
   </div>
 </div>
@@ -216,7 +216,7 @@
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-outline" data-modal-close="dialog-confirm-delete">Cancelar</button>
-      <button type="button" class="btn btn-destructive" onclick="executeDelete()">Eliminar</button>
+      <button type="button" id="btn-execute-delete" class="btn btn-destructive">Eliminar</button>
     </div>
   </div>
 </div>
@@ -240,7 +240,7 @@
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-outline" data-modal-close="modal-proveedor">Cancelar</button>
-      <button type="button" class="btn btn-primary" onclick="saveProveedor()">Guardar</button>
+      <button type="button" id="btn-save-proveedor" class="btn btn-primary">Guardar</button>
     </div>
   </div>
 </div>

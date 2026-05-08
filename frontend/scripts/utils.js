@@ -40,6 +40,18 @@ export function badge(text, variant) {
 }
 
 /**
+ * Convierte el estado de stock a una clave normalizada.
+ * @param {string} estado - 'agotado' | 'poca existencia' | 'normal' (o variantes)
+ * @returns {'agotado'|'bajo_minimo'|'normal'}
+ */
+export function toStatusKey(estado) {
+  const normalized = String(estado || '').trim().toLowerCase();
+  if (normalized === 'agotado') return 'agotado';
+  if (normalized === 'poca existencia' || normalized === 'bajo_minimo') return 'bajo_minimo';
+  return 'normal';
+}
+
+/**
  * Formatea un ISO string a fecha y hora corta en español (MX).
  */
 export function formatDateTime(isoStr) {

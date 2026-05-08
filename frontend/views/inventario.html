@@ -191,7 +191,7 @@
       </div>
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
-      <button type="button" id="btn-toggle-product" class="btn btn-outline-danger" onclick="toggleProductFromDetail()">Desactivar</button>
+      <button type="button" id="btn-toggle-product" class="btn btn-outline-danger">Desactivar</button>
       <button type="button" class="btn btn-outline" data-modal-close="modal-product-detail">Cerrar</button>
     </div>
   </div>
@@ -225,7 +225,7 @@
       <div id="ap-section-new">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-top:16px; margin-bottom:4px;">
           <span class="text-xs" style="font-weight:600; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.05em;">Nuevos productos</span>
-          <button type="button" id="ap-collapse-new" class="btn btn-ghost btn-sm" style="display:none; align-items:center; gap:4px; font-size:0.8rem;" onclick="toggleApSection('new')" aria-expanded="true">
+          <button type="button" id="ap-collapse-new" class="btn btn-ghost btn-sm" style="display:none; align-items:center; gap:4px; font-size:0.8rem;" aria-expanded="true">
             <svg id="ap-collapse-new-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
             <span id="ap-collapse-new-label">Ocultar</span>
           </button>
@@ -241,7 +241,7 @@
               <tbody id="add-product-rows"></tbody>
             </table>
           </div>
-          <button type="button" class="btn btn-ghost" style="margin-top:12px;" onclick="addProductRow()">
+          <button type="button" id="btn-add-product-row" class="btn btn-ghost" style="margin-top:12px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Agregar fila
           </button>
@@ -255,7 +255,7 @@
             <span class="text-xs" style="font-weight:600; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.05em;">Productos existentes</span>
             <span class="badge badge-warning" style="font-size:0.7rem; text-transform:none; letter-spacing:0;">Ya registrados</span>
           </span>
-          <button type="button" id="ap-collapse-existing" class="btn btn-ghost btn-sm" style="display:flex; align-items:center; gap:4px; font-size:0.8rem;" onclick="toggleApSection('existing')" aria-expanded="true">
+          <button type="button" id="ap-collapse-existing" class="btn btn-ghost btn-sm" style="display:flex; align-items:center; gap:4px; font-size:0.8rem;" aria-expanded="true">
             <svg id="ap-collapse-existing-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
             <span id="ap-collapse-existing-label">Ocultar</span>
           </button>
@@ -280,7 +280,7 @@
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-outline" data-modal-close="modal-add-product">Cancelar</button>
-      <button type="button" class="btn btn-primary" onclick="saveNewProducts()">Guardar productos</button>
+      <button type="button" id="btn-save-products" class="btn btn-primary">Guardar productos</button>
     </div>
   </div>
 </div>
@@ -307,10 +307,10 @@
       </div>
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
-      <button type="button" class="btn btn-ghost" onclick="skipXmlSupplier()">Omitir</button>
+      <button type="button" id="btn-skip-xml-supplier" class="btn btn-ghost">Omitir</button>
       <div style="display:flex;gap:8px;">
         <button type="button" class="btn btn-outline" data-modal-close="modal-xml-proveedor">Cancelar</button>
-        <button type="button" class="btn btn-primary" onclick="saveXmlSupplier()">Agregar proveedor</button>
+        <button type="button" id="btn-save-xml-supplier" class="btn btn-primary">Agregar proveedor</button>
       </div>
     </div>
   </div>
