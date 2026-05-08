@@ -28,6 +28,8 @@ backend/.env
 
 # Archivos internos del agente de IA y del IDE
 .agent/
+.claude/
+.maestri/
 CLAUDE.md
 graphify-out/
 .cursor/
@@ -40,3 +42,6 @@ Thumbs.db
 
 #Server PID
 .server-pids
+
+# Pruebas de playwright y node.js
+e2e/
