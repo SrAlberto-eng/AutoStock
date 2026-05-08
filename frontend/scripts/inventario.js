@@ -7,8 +7,11 @@
 let inventoryChipController = null;
 let inventoryFilterEngine = null;
 let addProductRowCount = 1;
+let addExistingProductRowCount = 0;
 let currentDetailProductId = null;
 let currentDetailProductActivo = true;
+const _nameCheckTimers = {};
+var _pendingXmlImport = null;
 const INVENTARIO_VIEW_NAME = 'inventario';
 
 function saveInventarioUIState() {
@@ -391,9 +394,14 @@ function createAddProductRowHTML(id, data) {
     '<td><input type="number" name="stock" min="0" class="input" placeholder="0" aria-label="Stock" value="', escapeHtmlSafe(source.stock || ''), '"></td>',
     '<td><input type="number" name="min_stock" min="0" class="input" placeholder="0" aria-label="Mínimo" value="', escapeHtmlSafe(source.minimo || ''), '"></td>',
     '<td><input type="number" name="max_stock" min="0" class="input" placeholder="0" aria-label="Máximo" value="', escapeHtmlSafe(source.maximo || ''), '"></td>',
-    '<td><button type="button" class="btn btn-ghost btn-icon" onclick="removeAddProductRow(', id, ')" aria-label="Eliminar fila">',
+    '<td style="white-space:nowrap;">',
+    '<button type="button" class="btn btn-ghost btn-icon" title="Mover a existentes" onclick="moveNewToExisting(', id, ')" aria-label="Mover a existentes" style="display:none;">',
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>',
+    '</button>',
+    '<button type="button" class="btn btn-ghost btn-icon" onclick="removeAddProductRow(', id, ')" aria-label="Eliminar fila">',
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
-    '</button></td>',
+    '</button>',
+    '</td>',
     '</tr>'
   ].join('');
 }
@@ -409,6 +417,13 @@ function addProductRow(prefill) {
     .replace(/^\s*<tr[^>]*>/, '')
     .replace(/<\/tr>\s*$/, '');
   tbody.appendChild(row);
+  _attachNameDebounce(row);
+
+  var nameInput = row.querySelector('input[name="name"]');
+  var moveBtn = row.querySelector('[aria-label="Mover a existentes"]');
+  if (moveBtn && nameInput && nameInput.value.trim()) moveBtn.style.display = '';
+
+  updateNewRowsButtonStates();
 }
 
 function removeAddProductRow(id) {
@@ -417,6 +432,282 @@ function removeAddProductRow(id) {
 
   const row = tbody.querySelector('[data-row-id="' + id + '"]');
   if (row) row.remove();
+  updateNewRowsButtonStates();
+}
+
+function _attachNameDebounce(rowEl) {
+  var nameInput = rowEl.querySelector('input[name="name"]');
+  if (!nameInput) return;
+  var rowId = rowEl.getAttribute('data-row-id');
+  nameInput.addEventListener('input', function () {
+    clearTimeout(_nameCheckTimers[rowId]);
+    var moveBtn = rowEl.querySelector('[aria-label="Mover a existentes"]');
+    var name = nameInput.value.trim();
+    if (moveBtn) moveBtn.style.display = name ? '' : 'none';
+    if (!name) return;
+    _nameCheckTimers[rowId] = setTimeout(async function () {
+      try {
+        var res = await window.ProductService.checkName(name);
+        if (res && res.data && res.data.exists) {
+          nameInput.style.borderColor = '#FFB86B';
+          nameInput.title = 'Producto ya registrado';
+        } else {
+          nameInput.style.borderColor = '';
+          nameInput.title = '';
+        }
+      } catch (e) {
+        console.error('[debounce] checkName("' + name + '") falló:', e && e.message || e);
+      }
+    }, 300);
+  });
+}
+
+function updateNewRowsButtonStates() {
+  var rows = document.querySelectorAll('#add-product-rows tr');
+  var single = rows.length <= 1;
+  rows.forEach(function (row) {
+    var removeBtn = row.querySelector('[aria-label="Eliminar fila"]');
+    if (removeBtn) removeBtn.style.display = single ? 'none' : '';
+  });
+}
+
+async function validateXmlProductNames() {
+  var rows = Array.from(document.querySelectorAll('#add-product-rows tr'));
+  if (!rows.length) return;
+  var checks = rows.map(async function (row) {
+    var nameInput = row.querySelector('input[name="name"]');
+    var name = nameInput ? nameInput.value.trim() : '';
+    if (!name) return null;
+    var stockInput = row.querySelector('input[name="stock"]');
+    var cantidad = stockInput ? parseFloat(stockInput.value) || 0 : 0;
+    var supplierSelect = row.querySelector('select[name="supplier"]');
+    var supplierId = supplierSelect && supplierSelect.value ? Number(supplierSelect.value) : null;
+    try {
+      var res = await window.ProductService.checkName(name);
+      if (res && res.data && res.data.exists) {
+        return { row: row, productId: res.data.id, cantidad: cantidad, supplierId: supplierId };
+      }
+    } catch (e) {
+      console.error('[validateXml] checkName("' + name + '") falló:', e && e.message || e);
+    }
+    return null;
+  });
+  var results = await Promise.all(checks);
+  var toMove = results.filter(Boolean);
+  if (!toMove.length) return;
+  toMove.forEach(function (item) {
+    addExistingProductRow(item.productId, item.cantidad, item.supplierId);
+    item.row.remove();
+  });
+  updateNewRowsButtonStates();
+  var existingSection = document.getElementById('ap-section-existing');
+  if (existingSection) existingSection.style.display = '';
+  var collapseBtn = document.getElementById('ap-collapse-new');
+  if (collapseBtn) collapseBtn.style.display = 'flex';
+}
+
+function createExistingProductRowHTML(id, productId, cantidad, supplierId) {
+  var products = (window.store && window.store.getState().products) || [];
+  var maps = getCatalogMaps();
+
+  var productOptions = ['<option value="">Seleccionar producto...</option>'];
+  products.forEach(function (p) {
+    var selected = (productId && String(p.id) === String(productId)) ? ' selected' : '';
+    productOptions.push('<option value="' + escapeHtmlSafe(String(p.id)) + '"' + selected + '>' + escapeHtmlSafe(p.nombre) + '</option>');
+  });
+
+  var unitName = '';
+  if (productId) {
+    var matched = products.find(function (p) { return String(p.id) === String(productId); });
+    if (matched) unitName = maps.unidades[String(matched.unidad_id)] || '';
+  }
+
+  var suppliers = (window.store && window.store.getState().suppliers) || [];
+  var supplierOptions = ['<option value="">Proveedor...</option>'];
+  suppliers.forEach(function (s) {
+    var selected = (supplierId && String(s.id) === String(supplierId)) ? ' selected' : '';
+    supplierOptions.push('<option value="' + escapeHtmlSafe(String(s.id)) + '"' + selected + '>' + escapeHtmlSafe(s.nombre) + '</option>');
+  });
+
+  return [
+    '<tr data-row-id="', id, '">',
+    '<td><select name="product" class="select-native" aria-label="Seleccionar producto" onchange="onExistingProductChange(this,', id, ')">',
+    productOptions.join(''),
+    '</select></td>',
+    '<td><input type="number" name="quantity" min="1" class="input" style="width:70px;" placeholder="0" aria-label="Cantidad" value="', (cantidad > 0 ? cantidad : ''), '"></td>',
+    '<td><span class="text-sm text-muted" id="ap-existing-unit-', id, '">', escapeHtmlSafe(unitName), '</span></td>',
+    '<td><select name="supplier" class="select-native" aria-label="Proveedor">',
+    supplierOptions.join(''),
+    '</select></td>',
+    '<td style="white-space:nowrap;">',
+    '<button type="button" class="btn btn-ghost btn-icon" title="Mover a nuevos productos" onclick="moveExistingToNew(', id, ')" aria-label="Mover a nuevos productos">',
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m12 5-7 7 7 7"/></svg>',
+    '</button>',
+    '<button type="button" class="btn btn-ghost btn-icon" onclick="removeExistingProductRow(', id, ')" aria-label="Eliminar fila existente">',
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    '</button>',
+    '</td>',
+    '</tr>'
+  ].join('');
+}
+
+function addExistingProductRow(productId, cantidad, supplierId) {
+  var tbody = document.getElementById('existing-product-rows');
+  if (!tbody) return;
+  addExistingProductRowCount += 1;
+  var id = addExistingProductRowCount;
+  var tr = document.createElement('tr');
+  tr.setAttribute('data-row-id', String(id));
+  tr.innerHTML = createExistingProductRowHTML(id, productId, cantidad, supplierId)
+    .replace(/^\s*<tr[^>]*>\n?/, '')
+    .replace(/\n?\s*<\/tr>\s*$/, '');
+  tbody.appendChild(tr);
+  var existingSection = document.getElementById('ap-section-existing');
+  if (existingSection) existingSection.style.display = '';
+}
+
+function removeExistingProductRow(id) {
+  var tbody = document.getElementById('existing-product-rows');
+  var row = tbody && tbody.querySelector('[data-row-id="' + id + '"]');
+  if (row) row.remove();
+  var existingSection = document.getElementById('ap-section-existing');
+  if (existingSection && tbody && !tbody.rows.length) existingSection.style.display = 'none';
+}
+
+function onExistingProductChange(selectEl, rowId) {
+  var productId = selectEl.value;
+  var products = (window.store && window.store.getState().products) || [];
+  var maps = getCatalogMaps();
+  var unitSpan = document.getElementById('ap-existing-unit-' + rowId);
+  if (unitSpan) {
+    var product = products.find(function (p) { return String(p.id) === String(productId); });
+    unitSpan.textContent = product ? (maps.unidades[String(product.unidad_id)] || '') : '';
+  }
+}
+
+function moveNewToExisting(rowId) {
+  var tbody = document.getElementById('add-product-rows');
+  var row = tbody && tbody.querySelector('[data-row-id="' + rowId + '"]');
+  if (!row) return;
+
+  var nameInput = row.querySelector('input[name="name"]');
+  var name = nameInput ? normalizeText(nameInput.value) : '';
+  var stockInput = row.querySelector('input[name="stock"]');
+  var cantidad = stockInput ? parseFloat(stockInput.value) || 0 : 0;
+  var supplierSelect = row.querySelector('select[name="supplier"]');
+  var supplierId = supplierSelect && supplierSelect.value ? Number(supplierSelect.value) : null;
+
+  var products = (window.store && window.store.getState().products) || [];
+  var match = products.find(function (p) { return normalizeText(p.nombre) === name; });
+
+  addExistingProductRow(match ? match.id : null, cantidad, supplierId);
+
+  var allNewRows = document.querySelectorAll('#add-product-rows tr');
+  if (allNewRows.length <= 1) {
+    if (nameInput) nameInput.value = '';
+    var categorySelect = row.querySelector('select[name="category"]');
+    var areaSelect = row.querySelector('select[name="area"]');
+    var unitSelect = row.querySelector('select[name="unit"]');
+    if (categorySelect) categorySelect.value = '';
+    if (areaSelect) areaSelect.value = '';
+    if (unitSelect) unitSelect.value = '';
+    var moveBtn = row.querySelector('[aria-label="Mover a existentes"]');
+    if (moveBtn) moveBtn.style.display = 'none';
+  } else {
+    removeAddProductRow(rowId);
+  }
+}
+
+function moveExistingToNew(rowId) {
+  var tbody = document.getElementById('existing-product-rows');
+  var row = tbody && tbody.querySelector('[data-row-id="' + rowId + '"]');
+  if (!row) return;
+
+  var select = row.querySelector('select[name="product"]');
+  var productId = select ? Number(select.value) : null;
+  var qtyInput = row.querySelector('input[name="quantity"]');
+  var cantidad = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
+  var supplierSel = row.querySelector('select[name="supplier"]');
+  var supplierId = supplierSel && supplierSel.value ? Number(supplierSel.value) : null;
+
+  var prefill = {};
+  if (productId) {
+    var products = (window.store && window.store.getState().products) || [];
+    var product = products.find(function (p) { return p.id === productId; });
+    if (product) {
+      prefill.name = product.nombre;
+      prefill.categoryId = product.categoria_id;
+      prefill.areaId = product.area_id;
+      prefill.unitId = product.unidad_id;
+    }
+  }
+  prefill.stock = cantidad > 0 ? String(cantidad) : '';
+  prefill.supplierId = supplierId;
+
+  addProductRow(prefill);
+  removeExistingProductRow(rowId);
+}
+
+function toggleApSection(section) {
+  var bodyId = section === 'new' ? 'ap-section-new-body' : 'ap-section-existing-body';
+  var labelId = section === 'new' ? 'ap-collapse-new-label' : 'ap-collapse-existing-label';
+  var iconId = section === 'new' ? 'ap-collapse-new-icon' : 'ap-collapse-existing-icon';
+  var body = document.getElementById(bodyId);
+  var label = document.getElementById(labelId);
+  var icon = document.getElementById(iconId);
+  if (!body) return;
+  var hidden = body.style.display === 'none';
+  body.style.display = hidden ? '' : 'none';
+  if (label) label.textContent = hidden ? 'Ocultar' : 'Mostrar';
+  if (icon) icon.style.transform = hidden ? '' : 'rotate(180deg)';
+}
+
+function _openXmlSupplierModal(supplierName, rows) {
+  _pendingXmlImport = { rows: rows, supplierName: supplierName };
+  var nameInput = document.getElementById('xml-proveedor-nombre');
+  var emailInput = document.getElementById('xml-proveedor-email');
+  var telInput = document.getElementById('xml-proveedor-telefono');
+  if (nameInput) nameInput.value = supplierName || '';
+  if (emailInput) emailInput.value = '';
+  if (telInput) telInput.value = '';
+  modalManager.open('modal-xml-proveedor');
+}
+
+async function saveXmlSupplier() {
+  var nombre = (document.getElementById('xml-proveedor-nombre').value || '').trim();
+  var email = (document.getElementById('xml-proveedor-email').value || '').trim();
+  var telefono = (document.getElementById('xml-proveedor-telefono').value || '').trim();
+  if (!nombre) {
+    document.getElementById('xml-proveedor-nombre').style.borderColor = '#FF6B6B';
+    return;
+  }
+  try {
+    await window.ProviderService.create({ nombre: nombre, email: email || null, telefono: telefono || null });
+    var res = await window.ProviderService.getAll();
+    if (res && res.data && res.data.items) {
+      window.store.setState({ suppliers: res.data.items });
+    }
+    showToast('Proveedor "' + nombre + '" agregado', 'success');
+    modalManager.close('modal-xml-proveedor');
+    if (_pendingXmlImport) {
+      var pendingRows = _pendingXmlImport.rows;
+      _pendingXmlImport = null;
+      fillAddProductRowsFromXml(pendingRows);
+      showToast(pendingRows.length + ' producto(s) importado(s) desde CFDI XML', 'success');
+    }
+  } catch (err) {
+    showToast((err && err.message) || 'Error al agregar proveedor', 'error');
+  }
+}
+
+function skipXmlSupplier() {
+  modalManager.close('modal-xml-proveedor');
+  if (_pendingXmlImport) {
+    var pendingRows = _pendingXmlImport.rows;
+    _pendingXmlImport = null;
+    fillAddProductRowsFromXml(pendingRows);
+    showToast(pendingRows.length + ' producto(s) importado(s) desde CFDI XML', 'success');
+  }
 }
 
 function resolveCatalogIdByName(catalogItems, name) {
@@ -457,12 +748,25 @@ function fillAddProductRowsFromXml(rows) {
       .replace(/^\s*<tr[^>]*>\n?/, '')
       .replace(/\n?\s*<\/tr>\s*$/, '');
     tbody.appendChild(tr);
+    _attachNameDebounce(tr);
+
+    var nameInput = tr.querySelector('input[name="name"]');
+    var moveBtn = tr.querySelector('[aria-label="Mover a existentes"]');
+    if (moveBtn && nameInput && nameInput.value.trim()) moveBtn.style.display = '';
   });
 
   if (addProductRowCount === 0) {
     addProductRowCount = 1;
     tbody.innerHTML = createAddProductRowHTML(1, {});
   }
+
+  updateNewRowsButtonStates();
+
+  setTimeout(function () {
+    validateXmlProductNames().catch(function (e) {
+      console.error('[validateXmlProductNames] error inesperado:', e && e.message || e);
+    });
+  }, 0);
 }
 
 async function importAddProductFromXml(file) {
@@ -478,6 +782,9 @@ async function importAddProductFromXml(file) {
   // Try CFDI format first (cfdi:Concepto or Concepto from SAT invoices)
   var conceptoNodes = doc.querySelectorAll('cfdi\\:Concepto, Concepto');
   if (conceptoNodes.length) {
+    var emisorNode = doc.querySelector('cfdi\\:Emisor, Emisor');
+    var supplierNameFromXml = emisorNode ? xmlAttrOrChild(emisorNode, 'Nombre', 'nombre') : '';
+
     const rows = Array.from(conceptoNodes).map(function (n) {
       return {
         name: xmlAttrOrChild(n, 'Descripcion', 'descripcion'),
@@ -486,8 +793,21 @@ async function importAddProductFromXml(file) {
         unit: xmlAttrOrChild(n, 'Unidad', 'ClaveUnidad', 'unidad'),
         stock: xmlAttrOrChild(n, 'Cantidad', 'cantidad'),
         minimo: '',
+        supplier: supplierNameFromXml,
       };
     });
+
+    if (supplierNameFromXml) {
+      var storeSuppliers = (window.store && window.store.getState().suppliers) || [];
+      var foundSupplier = storeSuppliers.find(function (s) {
+        return normalizeText(s.nombre) === normalizeText(supplierNameFromXml);
+      });
+      if (!foundSupplier) {
+        _openXmlSupplierModal(supplierNameFromXml, rows);
+        return;
+      }
+    }
+
     fillAddProductRowsFromXml(rows);
     showToast(rows.length + ' producto(s) importado(s) desde CFDI XML', 'success');
     return;
@@ -520,6 +840,14 @@ function initModalAddProduct() {
   if (tbody) tbody.innerHTML = '';
   addProductRowCount = 0;
   addProductRow();
+
+  var existingTbody = document.getElementById('existing-product-rows');
+  if (existingTbody) existingTbody.innerHTML = '';
+  addExistingProductRowCount = 0;
+
+  var existingSection = document.getElementById('ap-section-existing');
+  if (existingSection) existingSection.style.display = 'none';
+
   var fileName = document.getElementById('ap-xml-file-name');
   if (fileName) fileName.textContent = '';
 }
@@ -550,6 +878,7 @@ async function saveNewProducts() {
 
   rows.forEach(function (row, index) {
     const nameInput = row.querySelector('input[name="name"]');
+    
     const stockInput = row.querySelector('input[name="stock"]');
     const minStockInput = row.querySelector('input[name="min_stock"]');
     const maxStockInput = row.querySelector('input[name="max_stock"]');
@@ -597,22 +926,51 @@ async function saveNewProducts() {
     return;
   }
 
-  if (payloadItems.length === 0) {
+  // Collect existing product movement items
+  var movementItems = [];
+  var existingRows = Array.from(document.querySelectorAll('#existing-product-rows tr'));
+  var existingInvalid = false;
+  existingRows.forEach(function (row) {
+    var productSelect = row.querySelector('select[name="product"]');
+    var qtyInput = row.querySelector('input[name="quantity"]');
+    var productId = productSelect ? Number(productSelect.value || 0) : 0;
+    var cantidad = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
+    if (!productId) { existingInvalid = true; if (productSelect) productSelect.style.borderColor = '#FF6B6B'; return; }
+    if (cantidad <= 0) { existingInvalid = true; if (qtyInput) qtyInput.style.borderColor = '#FF6B6B'; return; }
+    movementItems.push({ producto_id: productId, cantidad: cantidad });
+  });
+
+  if (existingInvalid) {
+    showToast('Completa producto y cantidad en las filas de productos existentes', 'error');
+    return;
+  }
+
+  if (payloadItems.length === 0 && movementItems.length === 0) {
     showToast('No hay productos válidos para guardar', 'error');
     return;
   }
 
   try {
-    const res = await window.ProductService.createBulk(payloadItems);
-    const data = res && res.data ? res.data : {};
-    const creados = Number(data.creados || 0);
-    const omitidos = Number(data.omitidos || 0);
+    var creados = 0, omitidos = 0;
+    if (payloadItems.length) {
+      const res = await window.ProductService.createBulk(payloadItems);
+      const data = res && res.data ? res.data : {};
+      creados = Number(data.creados || 0);
+      omitidos = Number(data.omitidos || 0);
+    }
+    if (movementItems.length) {
+      await window.MovementService.create('entrada', movementItems, { motivo: 'Carga desde inventario' });
+    }
 
     modalManager.close('modal-add-product');
     await loadProductos();
-    showToast('Carga masiva completada. Creados: ' + creados + ', omitidos: ' + omitidos, 'success');
 
-    // Notificar a otras vistas que los productos cambiaron
+    var msg = [];
+    if (creados) msg.push('Creados: ' + creados);
+    if (omitidos) msg.push('Omitidos: ' + omitidos);
+    if (movementItems.length) msg.push('Entradas registradas: ' + movementItems.length);
+    showToast(msg.join(', ') || 'Guardado', 'success');
+
     document.dispatchEvent(new CustomEvent('products:changed'));
   } catch (err) {
     showToast(err.message, 'error');
