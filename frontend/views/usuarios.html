@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="../styles/animations.css">
   <script>
   try {
-    var savedTheme = JSON.parse(localStorage.getItem('v1_ui_theme')) || 'dark';
+    var savedTheme = localStorage.getItem('v1_ui_theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
   } catch(e) {
     document.documentElement.setAttribute('data-theme', 'dark');

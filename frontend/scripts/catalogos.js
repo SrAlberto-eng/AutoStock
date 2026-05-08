@@ -311,7 +311,7 @@ function renderProveedores(items) {
     : [];
 
   if (safeItems.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#A6A6A6; padding:32px 0;">No hay proveedores registrados</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="text-muted" style="text-align:center; padding:32px 0;">No hay proveedores registrados</td></tr>';
     return;
   }
 
@@ -414,11 +414,11 @@ function confirmToggle(id) {
   if (activo) {
     title.textContent = 'Desactivar proveedor';
     title.style.color = '#FF6B6B';
-    desc.innerHTML = '¿Desactivar al proveedor <strong style="color:#E6E6E6;">"' + nombre + '"</strong>? No aparecerá en listas de selección.';
+    desc.innerHTML = '¿Desactivar al proveedor <strong>"' + nombre + '"</strong>? No aparecerá en listas de selección.';
   } else {
     title.textContent = 'Activar proveedor';
     title.style.color = '#4ADE80';
-    desc.innerHTML = '¿Reactivar al proveedor <strong style="color:#E6E6E6;">"' + nombre + '"</strong>?';
+    desc.innerHTML = '¿Reactivar al proveedor <strong>"' + nombre + '"</strong>?';
   }
   modalManager.open('dialog-confirm-toggle');
 }

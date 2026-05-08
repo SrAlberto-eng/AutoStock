@@ -1657,6 +1657,27 @@ hr, .separator {
   .sm-grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
 }
 
+/* ════════════════════════════════════════════════════════
+   Light mode overrides
+   ════════════════════════════════════════════════════════ */
+
+/* Stat card icon backgrounds: more opaque in light mode */
+[data-theme="light"] .stat-card-icon-wrapper.stat-icon--green   { background-color: rgba(22, 163, 74,  0.14); }
+[data-theme="light"] .stat-card-icon-wrapper.stat-icon--blue    { background-color: rgba(37,  99, 235, 0.12); }
+[data-theme="light"] .stat-card-icon-wrapper.stat-icon--neutral { background-color: rgba(100,116, 139, 0.14); }
+
+/* Stat card icon stroke colors (override SVG presentation attribute) */
+[data-theme="light"] .stat-icon--green   .stat-card-icon { stroke: #16A34A; }
+[data-theme="light"] .stat-icon--blue    .stat-card-icon { stroke: #2563EB; }
+[data-theme="light"] .stat-icon--neutral .stat-card-icon { stroke: #475569; }
+
+/* Badges: semantic colors for light mode */
+[data-theme="light"] .badge-success { background-color: #DCFCE7; color: #15803D; }
+[data-theme="light"] .badge-warning { background-color: #FEF3C7; color: #92400E; }
+[data-theme="light"] .badge-danger  { background-color: #FEE2E2; color: #B91C1C; }
+[data-theme="light"] .badge-primary { background-color: #DBEAFE; color: #1D4ED8; }
+[data-theme="light"] .badge-muted   { background-color: #F1F5F9; color: #334155; }
+
 /* Print styles */
 @media print {
   #app-sidebar,

@@ -408,11 +408,11 @@ async function _loadRecentMovements() {
                     : diffMin < 60   ? 'Hace ' + diffMin + ' min'
                     : diffMin < 1440 ? 'Hace ' + Math.round(diffMin / 60) + ' h'
                     : fecha.toLocaleDateString('es-MX');
-      return '<div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #1E2022;">'
+      return '<div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--divider);">'
         + '<div style="display:flex; align-items:center; gap:12px;">'
         + '<div class="movement-dot" style="background-color:' + color + ';" aria-label="' + m.tipo + '"></div>'
         + '<div>'
-        + '<p class="text-sm" style="color:#E6E6E6;">' + escapeHtml(nombre) + '</p>'
+        + '<p class="text-sm">' + escapeHtml(nombre) + '</p>'
         + '<p class="text-xs text-muted">' + sign + m.cantidad + '</p>'
         + '</div>'
         + '</div>'

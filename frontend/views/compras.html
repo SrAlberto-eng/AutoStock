@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="../styles/animations.css">
   <script>
   try {
-    var savedTheme = JSON.parse(localStorage.getItem('v1_ui_theme')) || 'dark';
+    var savedTheme = localStorage.getItem('v1_ui_theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
   } catch(e) {
     document.documentElement.setAttribute('data-theme', 'dark');
@@ -115,7 +115,7 @@
           </thead>
           <tbody id="compras-tbody"></tbody>
         </table>
-        <p id="compras-empty" class="empty-state" style="display:none; padding:32px; text-align:center; color:#A6A6A6;">No hay productos en la lista de compras.</p>
+        <p id="compras-empty" class="empty-state text-muted" style="display:none; padding:32px; text-align:center;">No hay productos en la lista de compras.</p>
       </div>
 
       <!-- Footer summary -->
