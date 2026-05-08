@@ -1,4 +1,4 @@
-<!--
+    <!--
   Vista: Inventario General
   Fuente React: app/inventario/page.tsx
   Descripción: Tabla de inventario con filtros por nombre, categoría,
@@ -221,24 +221,97 @@
         <input id="ap-xml-input" type="file" accept=".xml,text/xml,application/xml" hidden>
       </div>
 
-      <div class="table-wrapper entry-table-wrap" style="margin-top:16px; overflow-x:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th class="text-center">Nombre</th><th class="text-center">Categoría</th><th class="text-center">Área</th><th class="text-center">Unidad</th><th class="text-center">Proveedor</th><th class="text-center">Stock</th><th class="text-center">Mín.</th><th class="text-center">Máx.</th><th></th>
-            </tr>
-          </thead>
-          <tbody id="add-product-rows"></tbody>
-        </table>
+      <!-- Sección: Nuevos productos -->
+      <div id="ap-section-new">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:16px; margin-bottom:4px;">
+          <span class="text-xs" style="font-weight:600; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.05em;">Nuevos productos</span>
+          <button type="button" id="ap-collapse-new" class="btn btn-ghost btn-sm" style="display:none; align-items:center; gap:4px; font-size:0.8rem;" onclick="toggleApSection('new')" aria-expanded="true">
+            <svg id="ap-collapse-new-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+            <span id="ap-collapse-new-label">Ocultar</span>
+          </button>
+        </div>
+        <div id="ap-section-new-body">
+          <div class="table-wrapper entry-table-wrap" style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th class="text-center">Nombre</th><th class="text-center">Categoría</th><th class="text-center">Área</th><th class="text-center">Unidad</th><th class="text-center">Proveedor</th><th class="text-center">Stock</th><th class="text-center">Mín.</th><th class="text-center">Máx.</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="add-product-rows"></tbody>
+            </table>
+          </div>
+          <button type="button" class="btn btn-ghost" style="margin-top:12px;" onclick="addProductRow()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Agregar fila
+          </button>
+        </div>
       </div>
-      <button type="button" class="btn btn-ghost" style="margin-top:12px;" onclick="addProductRow()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Agregar fila
-      </button>
+
+      <!-- Sección: Productos existentes — visible solo si hay filas -->
+      <div id="ap-section-existing" style="display:none; margin-top:16px; border-top:1px solid rgba(255,255,255,0.08); padding-top:16px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+          <span style="display:flex; align-items:center; gap:8px;">
+            <span class="text-xs" style="font-weight:600; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.05em;">Productos existentes</span>
+            <span class="badge badge-warning" style="font-size:0.7rem; text-transform:none; letter-spacing:0;">Ya registrados</span>
+          </span>
+          <button type="button" id="ap-collapse-existing" class="btn btn-ghost btn-sm" style="display:flex; align-items:center; gap:4px; font-size:0.8rem;" onclick="toggleApSection('existing')" aria-expanded="true">
+            <svg id="ap-collapse-existing-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+            <span id="ap-collapse-existing-label">Ocultar</span>
+          </button>
+        </div>
+        <div id="ap-section-existing-body">
+          <div class="table-wrapper entry-table-wrap" style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th class="text-left">Producto</th>
+                  <th class="text-right">Cantidad</th>
+                  <th class="text-left">Unidad</th>
+                  <th class="text-left">Proveedor</th>
+                  <th style="width:80px;"></th>
+                </tr>
+              </thead>
+              <tbody id="existing-product-rows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-outline" data-modal-close="modal-add-product">Cancelar</button>
       <button type="button" class="btn btn-primary" onclick="saveNewProducts()">Guardar productos</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Proveedor XML no registrado -->
+<div id="modal-xml-proveedor" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-xml-proveedor-title" data-state="closed">
+  <div class="modal-dialog modal-panel" style="max-width:480px;">
+    <div class="modal-header">
+      <h2 id="modal-xml-proveedor-title" class="modal-title">Proveedor no registrado</h2>
+    </div>
+    <div class="modal-body">
+      <p class="text-sm" style="color:var(--color-text-muted); margin-bottom:16px;">El proveedor de la factura no está registrado. Agrégalo para que quede asociado a los productos importados.</p>
+      <div class="field">
+        <label class="field-label" for="xml-proveedor-nombre">Nombre <span style="color:#FF6B6B;">*</span></label>
+        <input id="xml-proveedor-nombre" class="input" type="text" placeholder="Nombre del proveedor">
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label class="field-label" for="xml-proveedor-email">Email</label>
+        <input id="xml-proveedor-email" class="input" type="text" placeholder="Email (opcional)">
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label class="field-label" for="xml-proveedor-telefono">Teléfono</label>
+        <input id="xml-proveedor-telefono" class="input" type="text" placeholder="Teléfono (opcional)">
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <button type="button" class="btn btn-ghost" onclick="skipXmlSupplier()">Omitir</button>
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="btn btn-outline" data-modal-close="modal-xml-proveedor">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="saveXmlSupplier()">Agregar proveedor</button>
+      </div>
     </div>
   </div>
 </div>

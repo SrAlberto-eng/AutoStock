@@ -159,3 +159,10 @@ def update_stock_estado(conn, product_id: int):
             text("UPDATE productos SET estado = :estado WHERE id = :id"),
             {"estado": estado, "id": product_id},
         )
+        
+def find_product_by_name(conn, product_name: str) -> int | None:
+    result = conn.execute(
+        text("SELECT id FROM productos WHERE LOWER(nombre) = LOWER(:product_name) LIMIT 1"),
+        {"product_name": product_name}
+    ).first()
+    return result[0] if result else None

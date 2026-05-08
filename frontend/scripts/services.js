@@ -26,6 +26,10 @@ class ProductService {
   toggle(id) {
     return window.apiClient.post('/productos/' + id + '/toggle');
   }
+
+  checkName(name) {
+    return window.apiClient.get('/productos/check_name', { params: { name: name } });
+  }
 }
 
 class CatalogService {
