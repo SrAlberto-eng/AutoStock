@@ -1330,6 +1330,12 @@ td.td-num       { text-align: center; font-variant-numeric: tabular-nums; }
   padding: 18px 0 14px;
 }
 
+.catalogs-card .tab-panel td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Tabs inside modal (horizontal) */
 .modal-tabs-list {
   display: flex;
