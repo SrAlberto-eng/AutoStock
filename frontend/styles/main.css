@@ -947,24 +947,34 @@ td.td-num       { text-align: center; font-variant-numeric: tabular-nums; }
 .modal-add-product-dialog .entry-table-wrap table { table-layout: fixed; width: 100%; }
 .modal-add-product-dialog .entry-table-wrap th,
 .modal-add-product-dialog .entry-table-wrap td { padding: 6px 4px; }
+
 .modal-add-product-dialog .entry-table-wrap th:nth-child(1),
 .modal-add-product-dialog .entry-table-wrap td:nth-child(1) { width: 19%; }  /* Nombre */
+
 .modal-add-product-dialog .entry-table-wrap th:nth-child(2),
 .modal-add-product-dialog .entry-table-wrap td:nth-child(2) { width: 14%; }  /* Categoría */
+
 .modal-add-product-dialog .entry-table-wrap th:nth-child(3),
 .modal-add-product-dialog .entry-table-wrap td:nth-child(3) { width: 12%; }  /* Área */
+
 .modal-add-product-dialog .entry-table-wrap th:nth-child(4),
 .modal-add-product-dialog .entry-table-wrap td:nth-child(4) { width: 14%; }  /* Unidad */
+
 .modal-add-product-dialog .entry-table-wrap th:nth-child(5),
 .modal-add-product-dialog .entry-table-wrap td:nth-child(5) { width: 15%; }  /* Proveedor */
+
 .modal-add-product-dialog .entry-table-wrap th:nth-child(6),
-.modal-add-product-dialog .entry-table-wrap td:nth-child(6) { width: 7%; }   /* Stock */
+.modal-add-product-dialog .entry-table-wrap td:nth-child(6) { width: 6%; }   /* Stock */
+
 .modal-add-product-dialog .entry-table-wrap th:nth-child(7),
-.modal-add-product-dialog .entry-table-wrap td:nth-child(7) { width: 7%; }   /* Mín. */
+.modal-add-product-dialog .entry-table-wrap td:nth-child(7) { width: 6%; }   /* Mín. */
+
 .modal-add-product-dialog .entry-table-wrap th:nth-child(8),
-.modal-add-product-dialog .entry-table-wrap td:nth-child(8) { width: 7%; }   /* Máx. */
+.modal-add-product-dialog .entry-table-wrap td:nth-child(8) { width: 6%; }   /* Máx. */
+
 .modal-add-product-dialog .entry-table-wrap th:nth-child(9),
-.modal-add-product-dialog .entry-table-wrap td:nth-child(9) { width: 5%; text-align: center; } /* × btn */
+.modal-add-product-dialog .entry-table-wrap td:nth-child(9) { width: 76px; text-align: center; }    
+
 .modal-add-product-dialog .select-native { min-width: 0; width: 100%; font-size: 13px; padding: 6px 28px 6px 8px; }
 .modal-add-product-dialog .input { width: 100%; min-width: 0; font-size: 13px; padding: 6px 8px; }
 .modal-add-product-dialog .input[type="number"] { text-align: right; }
