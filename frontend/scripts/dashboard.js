@@ -294,7 +294,7 @@ async function _loadSummaryCards() {
           row.style.alignItems = 'center';
           row.style.justifyContent = 'space-between';
           row.style.padding = '8px 0';
-          row.style.borderBottom = '1px solid #1E2022';
+          row.style.borderBottom = '1px solid var(--divider)';
 
           const left = document.createElement('div');
           left.style.display = 'flex';
@@ -310,7 +310,6 @@ async function _loadSummaryCards() {
           const info = document.createElement('div');
           const name = document.createElement('p');
           name.className = 'text-sm';
-          name.style.color = '#E6E6E6';
           name.textContent = item && item.nombre ? String(item.nombre) : '';
 
           info.appendChild(name);
@@ -339,7 +338,7 @@ async function _loadSummaryCards() {
           row.style.alignItems = 'center';
           row.style.justifyContent = 'space-between';
           row.style.padding = '8px 0';
-          if (index < bajoMin.length - 1) row.style.borderBottom = '1px solid #1E2022';
+          if (index < bajoMin.length - 1) row.style.borderBottom = '1px solid var(--divider)';
 
           const left = document.createElement('div');
           left.style.display = 'flex';
@@ -355,7 +354,6 @@ async function _loadSummaryCards() {
           const info = document.createElement('div');
           const name = document.createElement('p');
           name.className = 'text-sm';
-          name.style.color = '#E6E6E6';
           name.textContent = item && item.nombre ? String(item.nombre) : '';
 
           const stock = document.createElement('p');
@@ -399,7 +397,7 @@ async function _loadRecentMovements() {
     const products = (window.store && window.store.getState().products) || [];
     list.innerHTML = items.map(function (m) {
       const sign  = m.tipo === 'entrada' ? '+' : '-';
-      const color = colors[m.tipo] || '#E6E6E6';
+      const color = colors[m.tipo] || 'var(--foreground-muted)';
       const prod  = products.find(function (p) { return p.id === m.producto_id; });
       const nombre = m.producto_nombre || (prod ? (prod.nombre || prod.sku || ('Producto #' + m.producto_id)) : ('Producto #' + m.producto_id));
       const fecha   = new Date(m.fecha_sistema);
@@ -408,11 +406,11 @@ async function _loadRecentMovements() {
                     : diffMin < 60   ? 'Hace ' + diffMin + ' min'
                     : diffMin < 1440 ? 'Hace ' + Math.round(diffMin / 60) + ' h'
                     : fecha.toLocaleDateString('es-MX');
-      return '<div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid #1E2022;">'
+      return '<div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--divider);">'
         + '<div style="display:flex; align-items:center; gap:12px;">'
         + '<div class="movement-dot" style="background-color:' + color + ';" aria-label="' + m.tipo + '"></div>'
         + '<div>'
-        + '<p class="text-sm" style="color:#E6E6E6;">' + escapeHtml(nombre) + '</p>'
+        + '<p class="text-sm">' + escapeHtml(nombre) + '</p>'
         + '<p class="text-xs text-muted">' + sign + m.cantidad + '</p>'
         + '</div>'
         + '</div>'

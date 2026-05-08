@@ -17,6 +17,14 @@
   <link rel="stylesheet" href="../styles/variables.css">
   <link rel="stylesheet" href="../styles/main.css">
   <link rel="stylesheet" href="../styles/animations.css">
+  <script>
+  try {
+    var savedTheme = localStorage.getItem('v1_ui_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  } catch(e) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+</script>
 </head>
 <body>
 
@@ -46,7 +54,8 @@
         <button id="mobile-menu-btn" class="btn-menu" aria-label="Abrir menú" style="display:none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
         <h1 class="top-bar-title">Catálogos</h1>
       </div>
-      <div class="top-bar-right">
+      <div class="top-bar-right" style="display: flex; align-items: center; gap: 12px;">
+        <button id="theme-toggle" class="btn btn-icon" aria-label="Alternar modo de color" style="background: transparent; color: var(--foreground-muted); cursor: pointer; padding: 6px;"></button>
         <div class="dropdown-wrapper" style="position:relative;">
           <button id="profile-trigger" class="profile-trigger" aria-label="Menú de perfil" aria-haspopup="true" aria-expanded="false"><div class="avatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div></button>
           <div id="profile-dropdown" class="dropdown-menu profile-menu hidden" role="menu">
@@ -134,7 +143,7 @@
           <div class="catalogs-panel-header">
             <h3 class="text-base font-medium">Proveedores</h3>
             <div style="display:flex; align-items:center; gap:12px;">
-              <label class="text-sm" style="display:flex; align-items:center; gap:6px; cursor:pointer; color:#A6A6A6;">
+              <label class="text-sm text-muted" style="display:flex; align-items:center; gap:6px; cursor:pointer;">
                 <input type="checkbox" id="chk-show-inactive-proveedores"> Mostrar inactivos
               </label>
               <button class="btn btn-primary btn-sm" onclick="openProveedorModal()" aria-label="Agregar proveedor">
@@ -199,9 +208,9 @@
       <h2 id="dialog-delete-title" class="modal-title" style="color:#FF6B6B;">Confirmar eliminación</h2>
     </div>
     <div class="modal-body">
-      <p id="dialog-delete-desc" class="text-sm" style="color:#A6A6A6;">
+      <p id="dialog-delete-desc" class="text-sm text-muted">
         Esta acción eliminará la entrada de forma permanente.
-        <strong id="dialog-delete-name" style="color:#E6E6E6;"></strong>
+        <strong id="dialog-delete-name"></strong>
         Los productos asociados no serán eliminados, pero perderán esta referencia.
       </p>
     </div>
@@ -243,7 +252,7 @@
       <h2 id="dialog-toggle-title" class="modal-title">Confirmar</h2>
     </div>
     <div class="modal-body">
-      <p id="dialog-toggle-desc" class="text-sm" style="color:#A6A6A6;"></p>
+      <p id="dialog-toggle-desc" class="text-sm text-muted"></p>
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-outline" data-modal-close="dialog-confirm-toggle">Cancelar</button>
@@ -258,6 +267,7 @@
 <script src="../scripts/api-client.js"></script>
 <script src="../scripts/services.js"></script>
 <script src="../scripts/store.js"></script>
+<script src="../scripts/theme-switcher.js"></script>
 <script src="../scripts/layout.js"></script>
 <script src="../scripts/toast.js"></script>
 <script src="../scripts/modals.js"></script>

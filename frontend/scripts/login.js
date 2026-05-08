@@ -25,6 +25,8 @@
   var rememberChk  = document.getElementById('remember-user');
   var showPassword = false;
 
+  if (window.initThemeSwitcher) window.initThemeSwitcher();
+
   // Restore remembered identifier
   var savedIdentifier = localStorage.getItem('as_remember_identifier');
   if (savedIdentifier && identifierInput) {
@@ -45,7 +47,7 @@
       passInput.type = showPassword ? 'text' : 'password';
       iconEye.classList.toggle('hidden', showPassword);
       iconEyeOff.classList.toggle('hidden', !showPassword);
-      toggleBtn.style.color = showPassword ? '#E6E6E6' : '#A6A6A6';
+      toggleBtn.style.color = showPassword ? 'var(--foreground)' : 'var(--foreground-muted)';
     });
   }
 

@@ -15,6 +15,14 @@
   <link rel="stylesheet" href="../styles/variables.css">
   <link rel="stylesheet" href="../styles/main.css">
   <link rel="stylesheet" href="../styles/animations.css">
+  <script>
+  try {
+    var savedTheme = localStorage.getItem('v1_ui_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  } catch(e) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+  </script>
 </head>
 <body>
 
@@ -44,7 +52,8 @@
         <button id="mobile-menu-btn" class="btn-menu" aria-label="Abrir menú" style="display:none;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
         <h1 class="top-bar-title">Reportes</h1>
       </div>
-      <div class="top-bar-right">
+      <div class="top-bar-right" style="display: flex; align-items: center; gap: 12px;">
+        <button id="theme-toggle" class="btn btn-icon" aria-label="Alternar modo de color" style="background: transparent; color: var(--foreground-muted); cursor: pointer; padding: 6px;"><svg></svg></button>      
         <div class="dropdown-wrapper" style="position:relative;">
           <button id="profile-trigger" class="profile-trigger" aria-label="Menú de perfil" aria-haspopup="true" aria-expanded="false"><div class="avatar"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div></button>
           <div id="profile-dropdown" class="dropdown-menu profile-menu hidden" role="menu">
@@ -137,7 +146,7 @@
           </thead>
           <tbody id="reportes-tbody"></tbody>
         </table>
-        <p id="reportes-empty" class="empty-state" style="display:none; padding:32px; text-align:center; color:#A6A6A6;">No se encontraron movimientos con los filtros aplicados.</p>
+        <p id="reportes-empty" class="empty-state text-muted" style="display:none; padding:32px; text-align:center;">No se encontraron movimientos con los filtros aplicados.</p>
       </div>
 
     </main>
@@ -150,6 +159,7 @@
 <script src="../scripts/api-client.js"></script>
 <script src="../scripts/services.js"></script>
 <script src="../scripts/store.js"></script>
+<script src="../scripts/theme-switcher.js"></script>
 <script src="../scripts/layout.js"></script>
 <script src="../scripts/toast.js"></script>
 <script src="../scripts/modals.js"></script>

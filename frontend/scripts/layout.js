@@ -142,6 +142,7 @@
     });
   }
 
+
   /* ════════════════════════════════════════════════════════
      MOBILE MENU
      ════════════════════════════════════════════════════════ */
@@ -364,9 +365,11 @@
     localStorage.removeItem('as_expires_at');
     localStorage.removeItem('as_role');
     localStorage.removeItem('as_nombre');
+    var savedTheme = localStorage.getItem('v1_ui_theme');
     if (window.storageManager && typeof window.storageManager.clearAll === 'function') {
       window.storageManager.clearAll();
     }
+    if (savedTheme) localStorage.setItem('v1_ui_theme', savedTheme);
     window.location.href = '../views/login.html';
   }
 
@@ -636,6 +639,7 @@
     initMobileMenu();
     initActiveNav();
     initProfileDropdown();
+    window.initThemeSwitcher();
   }
 
   // Ejecutamos inicialización de inmediato (ya que layout.js carga al final del body)

@@ -115,6 +115,8 @@ AutoStock/
 - `frontend/scripts/catalogos.js`: catalogos y proveedores.
 - `frontend/scripts/movements.js`: alta de movimientos.
 - `frontend/scripts/xml-importer.js`: previsualizacion de importacion XML.
+- `frontend/scripts/theme-switcher.js`: toggle dark/light compartido entre todas las vistas (incluido login).
+- `frontend/scripts/filter-chips.js`: chips de filtro por tipo en reportes.
 - `frontend/styles/`: variables, estilos globales y animaciones.
 
 ## Requisitos
@@ -290,9 +292,11 @@ Base URL: `http://127.0.0.1:8765`
 
 ## Estado actual y pendientes
 
-- Implementado: CRUD principal de dominio, auth por rol, auditoria, compras en tiempo real y reportes.
+- Implementado: CRUD principal de dominio, auth por rol, auditoria, compras en tiempo real, reportes y toggle de tema dark/light persistente en todas las vistas.
 - Pendiente 1: matching semantico real en `backend/ai/matcher.py`.
 - Pendiente 2: endpoint real para guardar perfil desde UI (`frontend/scripts/layout.js`).
+- Pendiente 3: vista de audit-log (endpoint `GET /api/reportes/audit-log` existe, frontend no lo consume aun).
+- Pendiente 4: empaquetar como .exe con Tauri (Rust no instalado; ver CLAUDE.md para pasos).
 
 ## Problemas comunes
 

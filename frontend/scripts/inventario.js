@@ -212,7 +212,7 @@ function renderTablaProductos(items) {
   const maps = getCatalogMaps();
 
   if (!items || items.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; color:#A6A6A6; padding:18px;">Sin productos registrados</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="text-muted" style="text-align:center; padding:18px;">Sin productos registrados</td></tr>';
     applyFilters();
     return;
   }
@@ -283,7 +283,7 @@ function renderHistorialEnModal(historial) {
   if (!tbody) return;
 
   if (!historial || historial.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#A6A6A6;">Sin movimientos</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="text-muted" style="text-align:center;">Sin movimientos</td></tr>';
     return;
   }
 
