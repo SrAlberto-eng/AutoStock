@@ -181,7 +181,7 @@
       <!-- Fields container — JS shows/hides fields according to type -->
       <div class="field-group">
         <div class="field" id="field-catalog-name">
-          <label class="field-label" for="catalog-name">Nombre <span style="color:#FF6B6B;">*</span></label>
+          <label class="field-label" for="catalog-name">Nombre <span class="required-mark">*</span></label>
           <input id="catalog-name" class="input" type="text" placeholder="Nombre del elemento"/>
         </div>
         <div class="field" id="field-catalog-description" style="display:none;">
@@ -205,7 +205,7 @@
 <div id="dialog-confirm-delete" class="modal-backdrop hidden" role="alertdialog" aria-modal="true" aria-labelledby="dialog-delete-title" aria-describedby="dialog-delete-desc" data-state="closed">
   <div class="modal-dialog alert-dialog-panel" style="max-width:440px;">
     <div class="modal-header">
-      <h2 id="dialog-delete-title" class="modal-title" style="color:#FF6B6B;">Confirmar eliminación</h2>
+      <h2 id="dialog-delete-title" class="modal-title text-danger">Confirmar eliminación</h2>
     </div>
     <div class="modal-body">
       <p id="dialog-delete-desc" class="text-sm text-muted">
@@ -230,9 +230,9 @@
     <div class="modal-body">
       <input type="hidden" id="proveedor-editing-id" value="">
       <div class="field">
-        <label class="field-label" for="proveedor-nombre">Nombre <span style="color:#FF6B6B;">*</span></label>
+        <label class="field-label" for="proveedor-nombre">Nombre <span class="required-mark">*</span></label>
         <input id="proveedor-nombre" class="input" type="text" placeholder="Nombre del proveedor">
-        <label class="field-label" for="proveedor-email">Email <span style="color:#FF6B6B;">*</span> </label>
+        <label class="field-label" for="proveedor-email">Email <span class="required-mark">*</span> </label>
         <input id="proveedor-email" class="input" type="text" placeholder="Email del proveedor">
         <label class="field-label" for="proveedor-telefono">Telefono </label>
         <input id="proveedor-telefono" class="input" type="text" placeholder="Telefono del proveedor">
@@ -271,6 +271,6 @@
 <script src="../scripts/layout.js"></script>
 <script src="../scripts/toast.js"></script>
 <script src="../scripts/modals.js"></script>
-<script src="../scripts/catalogos.js"></script>
+<script type="module" src="../scripts/catalogos.js"></script>
 </body>
 </html>

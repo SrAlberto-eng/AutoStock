@@ -4,6 +4,7 @@
  * modal de crear/editar con campos dinámicos según tipo,
  * y confirmación de eliminación via AlertDialog.
  */
+import { MSG } from './constants/messages.js';
 
 // Fila pendiente de eliminación
 let pendingDeleteRow = null;
@@ -78,7 +79,7 @@ function readItemId(item) {
 function renderActionsCell(ariaLabelEdit, ariaLabelDelete) {
   return '<td class="catalog-actions td-actions">'
     + '<button class="btn btn-ghost btn-icon" onclick="editCatalogItem(this)" aria-label="' + ariaLabelEdit + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg></button>'
-    + '<button class="btn btn-ghost btn-icon" style="color:#FF6B6B;" onclick="confirmDelete(this)" aria-label="' + ariaLabelDelete + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="m19 6-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>'
+    + '<button class="btn btn-ghost btn-icon text-danger" onclick="confirmDelete(this)" aria-label="' + ariaLabelDelete + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="m19 6-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>'
     + '</td>';
 }
 
@@ -185,7 +186,7 @@ async function saveCatalogItem() {
   const abbreviation = document.getElementById('catalog-abbreviation').value.trim();
 
   if (!name) {
-    showToast('El nombre es requerido', 'error');
+    showToast(MSG.CATALOGS.NAME_REQUIRED, 'error');
     document.getElementById('catalog-name').focus();
     return;
   }
@@ -212,7 +213,7 @@ async function saveCatalogItem() {
     renderTabla('areas', updated.areas);
     renderTabla('unidades', updated.unidades);
 
-    showToast('Guardado', 'success');
+    showToast(MSG.CATALOGS.SAVED, 'success');
     modalManager.close('modal-catalog');
   } catch (err) {
     showToast(err.message, 'error');
@@ -259,12 +260,12 @@ async function executeDelete() {
     renderTabla('areas', updated.areas);
     renderTabla('unidades', updated.unidades);
 
-    showToast('"' + name + '" eliminado correctamente', 'success');
+    showToast(MSG.CATALOGS.DELETED(name), 'success');
     modalManager.close('dialog-confirm-delete');
     pendingDeleteRow = null;
   } catch (err) {
     if (err.status === 409) {
-      showToast('No se puede eliminar: tiene productos asociados', 'error');
+      showToast(MSG.CATALOGS.DELETE_HAS_PRODUCTS, 'error');
     } else {
       showToast(err.message, 'error');
     }
@@ -377,7 +378,7 @@ async function saveProveedor() {
   var id = document.getElementById('proveedor-editing-id').value;
 
   if (!nombre) {
-    showToast('El nombre es requerido', 'error');
+    showToast(MSG.CATALOGS.NAME_REQUIRED, 'error');
     document.getElementById('proveedor-nombre').focus();
     return;
   }
@@ -386,10 +387,10 @@ async function saveProveedor() {
     store.setState({ ui: { loading: true } });
     if (id) {
       await window.ProviderService.update(parseInt(id, 10), { nombre: nombre, email: email, telefono: telefono});
-      showToast('Proveedor actualizado', 'success');
+      showToast(MSG.CATALOGS.PROVIDER_UPDATED, 'success');
     } else {
       await window.ProviderService.create({ nombre: nombre, email: email, telefono: telefono });
-      showToast('Proveedor creado', 'success');
+      showToast(MSG.CATALOGS.PROVIDER_CREATED, 'success');
     }
     modalManager.close('modal-proveedor');
     await loadProveedores();
@@ -413,11 +414,13 @@ function confirmToggle(id) {
   var desc = document.getElementById('dialog-toggle-desc');
   if (activo) {
     title.textContent = 'Desactivar proveedor';
-    title.style.color = '#FF6B6B';
+    title.classList.add('text-danger');
+    title.classList.remove('text-success');
     desc.innerHTML = '¿Desactivar al proveedor <strong>"' + nombre + '"</strong>? No aparecerá en listas de selección.';
   } else {
     title.textContent = 'Activar proveedor';
-    title.style.color = '#4ADE80';
+    title.classList.add('text-success');
+    title.classList.remove('text-danger');
     desc.innerHTML = '¿Reactivar al proveedor <strong>"' + nombre + '"</strong>?';
   }
   modalManager.open('dialog-confirm-toggle');
@@ -434,12 +437,23 @@ async function executeToggle() {
     store.setState({ ui: { loading: true } });
     await window.ProviderService.toggle(id);
     modalManager.close('dialog-confirm-toggle');
-    showToast('Estado actualizado', 'success');
+    showToast(MSG.CATALOGS.STATUS_UPDATED, 'success');
     await loadProveedores();
   } catch (err) {
-    var msg = (err && err.message) ? err.message : 'Error al cambiar estado';
+    var msg = (err && err.message) ? err.message : MSG.INVENTORY.TOGGLE_ERROR;
     showToast(msg, 'error');
   } finally {
     store.setState({ ui: { loading: false } });
   }
 }
+
+window.openCatalogModal       = openCatalogModal;
+window.editCatalogItem        = editCatalogItem;
+window.saveCatalogItem        = saveCatalogItem;
+window.confirmDelete          = confirmDelete;
+window.executeDelete          = executeDelete;
+window.openProveedorModal     = openProveedorModal;
+window.editProveedor          = editProveedor;
+window.saveProveedor          = saveProveedor;
+window.confirmToggle          = confirmToggle;
+window.confirmToggleProveedor = confirmToggle;

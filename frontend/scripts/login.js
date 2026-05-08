@@ -8,9 +8,7 @@
  *              - Spinner de carga durante el proceso
  *              - Redirección a dashboard.html tras login exitoso
  */
-
-(function () {
-  'use strict';
+import { MSG } from './constants/messages.js';
 
   var form         = document.getElementById('login-form');
   var identifierInput   = document.getElementById('identifier');
@@ -60,7 +58,7 @@
       var password = passInput  ? passInput.value.trim()  : '';
 
       if (!identifier || !password) {
-        showToast('Por favor, completa todos los campos', 'error');
+        showToast(MSG.AUTH.FIELDS_REQUIRED, 'error');
         return;
       }
 
@@ -69,7 +67,7 @@
 
       try {
         if (!window.apiClient || typeof window.apiClient.post !== 'function') {
-          throw new Error('Cliente API no disponible');
+          throw new Error(MSG.AUTH.API_UNAVAILABLE);
         }
 
         var result = await window.apiClient.post('/auth/login', {
@@ -78,13 +76,13 @@
         });
 
         if (!result || result.success !== true) {
-          showToast((result && result.error) || 'Error de conexión. Verifica que el servidor esté activo.', 'error');
+          showToast((result && result.error) || MSG.AUTH.CONNECTION_ERROR, 'error');
           return;
         }
 
         var data = result.data || {};
         if (!data.token) {
-          throw new Error('Respuesta de login inválida: token no recibido');
+          throw new Error(MSG.AUTH.TOKEN_MISSING);
         }
 
         localStorage.setItem('as_token',      data.token);
@@ -102,35 +100,34 @@
 
         if (data.debe_cambiar_password === true) {
           localStorage.setItem('debe_cambiar_password', '1');
-          showToast('Debes cambiar tu contraseña antes de continuar', 'warning', 4000);
+          showToast(MSG.PASSWORD.FORCE_CHANGE_REQUIRED, 'warning', 4000);
           setTimeout(function () {
             promptForcePasswordChange();
           }, 250);
           return;
         }
 
-        showToast('Bienvenido, ' + data.nombre, 'success');
+        showToast(MSG.AUTH.WELCOME(data.nombre), 'success');
         setLoading(false);
         window.location.href = getDashboardHref();
         return;
       } catch (err) {
         if (err && err.status === 401) {
-          showToast('Credenciales incorrectas', 'error');
+          showToast(MSG.AUTH.CREDENTIALS_INVALID, 'error');
           if (passInput) passInput.value = '';
           return;
         }
 
         if (err && err.status === 403) {
-          showToast('Cuenta bloqueada. Contacta al administrador.', 'error');
+          showToast(MSG.AUTH.ACCOUNT_LOCKED, 'error');
           if (passInput) passInput.value = '';
           return;
         }
 
-        // Normaliza errores al formato { success, data, error }
         var errorResult = {
           success: false,
           data: null,
-          error: (err && err.message) || 'Error de conexión. Verifica que el servidor esté activo.'
+          error: (err && err.message) || MSG.AUTH.CONNECTION_ERROR
         };
         showToast(errorResult.error, 'error');
       } finally {
@@ -142,28 +139,26 @@
   function setLoading(loading) {
     if (!submitBtn || !submitLabel || !submitSpinner) return;
     submitBtn.disabled = loading;
-    submitLabel.textContent = loading ? 'Iniciando sesión...' : 'Iniciar Sesión';
+    submitLabel.textContent = loading ? MSG.AUTH.LOADING : MSG.AUTH.SUBMIT;
     submitSpinner.classList.toggle('hidden', !loading);
   }
 
   async function promptForcePasswordChange() {
     var nueva = prompt('Ingresa tu nueva contraseña (mín. 6 chars):');
     if (!nueva || nueva.length < 6) {
-      showToast('Debes ingresar una contraseña válida para continuar', 'warning', 4000);
+      showToast(MSG.PASSWORD.FORCE_CHANGE_INVALID, 'warning', 4000);
       return;
     }
 
     try {
       if (!window.apiClient || typeof window.apiClient.post !== 'function') {
-        throw new Error('Cliente API no disponible');
+        throw new Error(MSG.AUTH.API_UNAVAILABLE);
       }
 
       await window.apiClient.post('/usuarios/cambiar-password', { password: nueva });
       localStorage.removeItem('debe_cambiar_password');
       window.location.href = getDashboardHref();
     } catch (err) {
-      showToast((err && err.message) || 'No se pudo cambiar la contraseña', 'error');
+      showToast((err && err.message) || MSG.PASSWORD.CHANGE_FAILED, 'error');
     }
   }
-
-})();

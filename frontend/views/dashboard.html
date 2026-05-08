@@ -104,7 +104,7 @@
             <div class="stat-card">
               <div class="stat-card-left">
                 <div class="stat-card-icon-wrapper stat-icon--green">
-                  <svg class="stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="#6BE89A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/></svg>
+                  <svg class="stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/></svg>
                 </div>
                 <p class="stat-label">Entradas hoy</p>
               </div>
@@ -115,7 +115,7 @@
             <div class="stat-card">
               <div class="stat-card-left">
                 <div class="stat-card-icon-wrapper stat-icon--blue">
-                  <svg class="stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="#5AA9FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v14"/><path d="m19 9-7-7-7 7"/><path d="M5 21h14"/></svg>
+                  <svg class="stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v14"/><path d="m19 9-7-7-7 7"/><path d="M5 21h14"/></svg>
                 </div>
                 <p class="stat-label">Salidas hoy</p>
               </div>
@@ -126,7 +126,7 @@
             <div class="stat-card">
               <div class="stat-card-left">
                 <div class="stat-card-icon-wrapper stat-icon--neutral">
-                  <svg class="stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="#E6E6E6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                  <svg class="stat-card-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
                 </div>
                 <p class="stat-label">Productos en inventario</p>
               </div>
@@ -167,20 +167,20 @@
               <h2 class="card-title">Accesos Rápidos</h2>
             </div>
             <div style="display:grid; grid-template-columns:1fr; gap:12px;">
-              <button class="quick-action-btn" onclick="modalManager.open('modal-entry')" aria-label="Registrar entrada">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6BE89A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <button class="quick-action-btn quick-action-btn--entrada" onclick="modalManager.open('modal-entry')" aria-label="Registrar entrada">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 <span>Registrar entrada</span>
               </button>
-              <button class="quick-action-btn" onclick="modalManager.open('modal-exit')" aria-label="Registrar salida">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5AA9FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <button class="quick-action-btn quick-action-btn--salida" onclick="modalManager.open('modal-exit')" aria-label="Registrar salida">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 <span>Registrar salida</span>
               </button>
-              <button class="quick-action-btn" onclick="modalManager.open('modal-waste')" aria-label="Registrar merma">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF6B6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="m19 6-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              <button class="quick-action-btn quick-action-btn--merma" onclick="modalManager.open('modal-waste')" aria-label="Registrar merma">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="m19 6-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                 <span>Registrar merma</span>
               </button>
-              <a href="compras.html" class="quick-action-btn" style="text-decoration:none;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFB86B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+              <a href="compras.html" class="quick-action-btn quick-action-btn--compras">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
                 <span>Lista de compras</span>
               </a>
             </div>
@@ -406,6 +406,6 @@
 <script src="../scripts/xml-importer.js"></script>
 <script src="../scripts/select-ui.js"></script>
 <script src="../scripts/movements.js"></script>
-<script src="../scripts/dashboard.js"></script>
+<script type="module" src="../scripts/dashboard.js"></script>
 </body>
 </html>

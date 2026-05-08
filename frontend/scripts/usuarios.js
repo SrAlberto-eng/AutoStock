@@ -3,6 +3,8 @@
  * Filtros de búsqueda, apertura del modal de usuario (nuevo / editar),
  * validación y guardado del formulario.
  */
+import { MSG } from './constants/messages.js';
+import { slugify, badge } from './utils.js';
 
 let usersFilterEngine = null;
 let usuariosItems = [];
@@ -26,7 +28,7 @@ function isAdminUser() {
 
 function ensureAdminAccess() {
   if (isAdminUser()) return true;
-  showToast('Solo administrador puede ejecutar esta operación', 'error');
+  showToast(MSG.USERS.ADMIN_ONLY, 'error');
   return false;
 }
 
@@ -84,8 +86,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   initActiveNav();
 
   var createBtn = document.getElementById('btn-new-user');
-  if (createBtn && !isAdminUser()) {
-    createBtn.style.display = 'none';
+  if (createBtn) {
+    if (!isAdminUser()) {
+      createBtn.style.display = 'none';
+    } else {
+      createBtn.addEventListener('click', openUserModal);
+    }
   }
 
   await ensureAreasLoaded();
@@ -155,6 +161,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadUsuarios();
   applyFilters();
   saveUsuariosUIState();
+
+  document.getElementById('usuarios-tbody')?.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    if (action === 'edit')   editUser(btn);
+    if (action === 'toggle') toggleUser(Number(btn.dataset.id));
+    if (action === 'reset')  resetUserPassword(Number(btn.dataset.id), btn.dataset.name || '');
+  });
+
+  document.getElementById('btn-save-user')?.addEventListener('click', saveUser);
+  document.getElementById('btn-cancel-user')?.addEventListener('click', clearUserModal);
 });
 
 async function ensureAreasLoaded() {
@@ -166,15 +184,6 @@ async function ensureAreasLoaded() {
   const catalogs = await window.CatalogService.getAllCatalogs();
   window.store.setState({ catalogs: { areas: catalogs.areas || [] } });
   return catalogs.areas || [];
-}
-
-function normalizeValue(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-');
 }
 
 function getAreaNameById(areaId) {
@@ -198,7 +207,7 @@ function populateAreaSelects() {
   if (filterSelect) {
     const selected = filterSelect.value;
     filterSelect.innerHTML = '<option value="">Todas las áreas</option>'
-      + areas.map(area => `<option value="${normalizeValue(area.nombre)}">${window.escapeHtml(area.nombre)}</option>`).join('');
+      + areas.map(area => `<option value="${slugify(area.nombre)}">${window.escapeHtml(area.nombre)}</option>`).join('');
     filterSelect.value = selected;
   }
 }
@@ -216,12 +225,6 @@ async function loadUsuarios() {
   } catch (err) {
     showToast(err.message, 'error');
   }
-}
-
-function renderRoleBadge(rol) {
-  const normalized = normalizeValue(rol);
-  const badgeClass = normalized === 'administrador' ? 'badge badge-primary' : 'badge badge-muted';
-  return `<span class="${badgeClass}">${window.escapeHtml(rol)}</span>`;
 }
 
 function renderEstadoUsuario(user) {
@@ -259,7 +262,7 @@ function renderTablaUsuarios(items) {
       : '<span class="badge badge-muted">Inactivo</span>';
     const isSelf = currentUserId !== null && user.id === currentUserId;
     const toggleBtn = (esAdmin && !isSelf)
-      ? `<button class="btn btn-ghost btn-icon" onclick="toggleUser(${user.id})" aria-label="${activo ? 'Desactivar' : 'Activar'} usuario">` +
+      ? `<button class="btn btn-ghost btn-icon" data-action="toggle" data-id="${user.id}" aria-label="${activo ? 'Desactivar' : 'Activar'} usuario">` +
         (activo
           ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
           : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>')
@@ -268,10 +271,10 @@ function renderTablaUsuarios(items) {
     const acciones = (esAdmin && !isSelf)
       ? `
           <div style="display:flex; gap:4px; justify-content:flex-end;">
-            <button class="btn btn-ghost btn-icon" onclick="editUser(this)" aria-label="Editar usuario">
+            <button class="btn btn-ghost btn-icon" data-action="edit" aria-label="Editar usuario">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
             </button>
-            <button class="btn btn-ghost btn-icon" onclick="resetUserPassword(${user.id}, '${window.escapeHtml(user.nombre)}')" aria-label="Resetear contraseña">
+            <button class="btn btn-ghost btn-icon" data-action="reset" data-id="${user.id}" data-name="${window.escapeHtml(user.nombre)}" aria-label="Resetear contraseña">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
             </button>
             ${toggleBtn}
@@ -286,7 +289,7 @@ function renderTablaUsuarios(items) {
         data-email="${window.escapeHtml(user.email)}"
         data-role="${window.escapeHtml(user.rol)}"
         data-role-id="${window.escapeHtml(user.role_id)}"
-        data-area="${window.escapeHtml(normalizeValue(areaNombre))}"
+        data-area="${window.escapeHtml(slugify(areaNombre))}"
         data-area-id="${window.escapeHtml(user.area_id || '')}"
         ${rowStyle}
       >
@@ -297,7 +300,7 @@ function renderTablaUsuarios(items) {
           </div>
         </td>
         <td>${window.escapeHtml(user.email)}</td>
-        <td class="text-center">${renderRoleBadge(user.rol)}</td>
+        <td class="text-center">${badge(user.rol, user.rol === 'administrador' ? 'primary' : 'muted')}</td>
         <td>${window.escapeHtml(areaNombre)}</td>
         <td class="text-center">${window.escapeHtml(estadoUsuario)}</td>
         <td class="text-center">${activoBadge}</td>
@@ -392,24 +395,24 @@ async function saveUser() {
   const isNew = !editingId && passSection && passSection.style.display !== 'none';
 
   if (!name) {
-    showToast('El nombre es requerido', 'error');
+    showToast(MSG.USERS.NAME_REQUIRED, 'error');
     document.getElementById('user-name').focus();
     return;
   }
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    showToast('Ingresa un correo válido', 'error');
+    showToast(MSG.USERS.EMAIL_INVALID, 'error');
     document.getElementById('user-email').focus();
     return;
   }
   if (!role) {
-    showToast('Selecciona un rol', 'error');
+    showToast(MSG.USERS.ROLE_REQUIRED, 'error');
     document.getElementById('user-role').focus();
     return;
   }
   if (isNew) {
     const pass = document.getElementById('user-temp-pass').value;
     if (!pass || pass.length < 6) {
-      showToast('La contraseña temporal debe tener al menos 6 caracteres', 'error');
+      showToast(MSG.PASSWORD.TEMP_TOO_SHORT, 'error');
       document.getElementById('user-temp-pass').focus();
       return;
     }
@@ -434,7 +437,7 @@ async function saveUser() {
       await window.UserService.update(Number(editingId), payload);
     }
 
-    showToast(`Usuario ${isNew ? 'creado' : 'actualizado'} correctamente`, 'success');
+    showToast(MSG.USERS.SAVED(isNew), 'success');
     modalManager.close('modal-user');
     clearUserModal();
     await loadUsuarios();
@@ -449,7 +452,7 @@ async function resetUserPassword(id, nombre) {
   if (!confirm('¿Generar nueva contraseña temporal para "' + displayName + '"?')) return;
   try {
     const res = await window.UserService.resetPassword(id);
-    showToast('Contraseña temporal: ' + res.data.password_temporal, 'info', 8000);
+    showToast(MSG.PASSWORD.TEMP_DISPLAY(res.data.password_temporal), 'info', 8000);
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -467,7 +470,7 @@ async function toggleUser(id) {
 
   try {
     await window.UserService.toggle(id);
-    showToast('Usuario ' + (activo ? 'desactivado' : 'activado'), 'success');
+    showToast(activo ? MSG.USERS.DEACTIVATED : MSG.USERS.ACTIVATED, 'success');
     await loadUsuarios();
   } catch (err) {
     var msg = (err && err.message) ? err.message : 'Error al cambiar estado';
@@ -494,8 +497,9 @@ async function deleteUser(btn) {
     if (usersFilterEngine) usersFilterEngine.apply();
     const emptyMsg = document.getElementById('usuarios-empty');
     if (emptyMsg) emptyMsg.style.display = usuariosItems.length === 0 ? 'block' : 'none';
-    showToast('Usuario eliminado correctamente', 'success');
+    showToast(MSG.USERS.DELETED, 'success');
   } catch (err) {
     showToast(err.message, 'error');
   }
 }
+

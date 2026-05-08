@@ -3,6 +3,7 @@
  * Lista de compras: actualización de cantidades, eliminación de filas,
  * totales en tiempo real, exportación PDF e impresión.
  */
+import { MSG } from './constants/messages.js';
 
 let comprasFilterEngine = null;
 let comprasItems = [];
@@ -179,13 +180,13 @@ function renderTablaCompras(items) {
     const stockMin = item.stock_min ?? 0;
     const stockLabel = hasStockActual ? item.stock_actual : '-';
 
-    let stockColor = 'var(--foreground)';
+    let stockClass = '';
     if (!hasStockActual) {
-      stockColor = 'var(--foreground-muted)';
+      stockClass = 'text-muted';
     } else if (Number.isFinite(stockActual) && stockActual === 0) {
-      stockColor = '#FF6B6B';
+      stockClass = 'text-zero';
     } else if (Number.isFinite(stockActual) && stockActual > 0 && stockActual < stockMin) {
-      stockColor = '#FFB86B';
+      stockClass = 'text-warning';
     }
 
     return `
@@ -193,7 +194,7 @@ function renderTablaCompras(items) {
         <td>${window.escapeHtml(item.nombre_producto)}</td>
         <td>${window.escapeHtml(category)}</td>
         <td>${window.escapeHtml(area)}</td>
-        <td class="td-num" style="color:${stockColor};">${window.escapeHtml(String(stockLabel))}</td>
+        <td class="td-num ${stockClass}">${window.escapeHtml(String(stockLabel))}</td>
         <td class="td-num">${window.escapeHtml(String(stockMin))}</td>
         <td>${window.escapeHtml(unit)}</td>
         <td>
@@ -309,13 +310,13 @@ function updateEmptyState(visibleRowsOverride, totalRowsOverride) {
     : tbody.querySelectorAll('tr:not([style*="display: none"])').length;
 
   if (totalRows === 0) {
-    emptyMsg.textContent = 'No hay productos en la lista de compras.';
+    emptyMsg.textContent = MSG.PURCHASES.NO_PRODUCTS;
     emptyMsg.style.display = 'block';
     return;
   }
 
   if (visibleRows === 0) {
-    emptyMsg.textContent = 'No se encontraron productos con los filtros aplicados.';
+    emptyMsg.textContent = MSG.PURCHASES.NO_MATCH_FILTERS;
     emptyMsg.style.display = 'block';
     return;
   }
@@ -328,7 +329,7 @@ function printCompras() {
   const usuario = localStorage.getItem('as_nombre') || 'Usuario no identificado';
   const printWindow = window.open('', '_blank', 'width=1024,height=768');
   if (!printWindow) {
-    showToast('El navegador bloqueó la ventana de impresión.', 'error');
+    showToast(MSG.PURCHASES.PRINT_BLOCKED, 'error');
     return;
   }
 
@@ -338,6 +339,7 @@ function printCompras() {
   printWindow.focus();
   printWindow.print();
 }
+window.printCompras = printCompras;
 
 function buildPrintMarkup(items, fechaExportacion, usuario) {
   const fecha = fechaExportacion ? new Date(fechaExportacion).toLocaleString('es-MX') : new Date().toLocaleString('es-MX');
@@ -396,7 +398,7 @@ function buildPrintMarkup(items, fechaExportacion, usuario) {
 function exportPDF() {
   const items = comprasItems || [];
   if (items.length === 0) {
-    showToast('No hay productos para exportar.', 'error');
+    showToast(MSG.PURCHASES.NO_PRODUCTS_EXPORT, 'error');
     return;
   }
 
@@ -404,7 +406,7 @@ function exportPDF() {
   const printWindow = window.open('', '_blank', 'width=1024,height=768');
 
   if (!printWindow) {
-    showToast('El navegador bloqueó la ventana de impresión.', 'error');
+    showToast(MSG.PURCHASES.PRINT_BLOCKED, 'error');
     return;
   }
 
@@ -414,3 +416,8 @@ function exportPDF() {
   printWindow.focus();
   printWindow.print();
 }
+window.exportPDF = exportPDF;
+
+window.loadCompras    = loadCompras;
+window.removeCompraRow = removeCompraRow;
+window.updateQty      = updateQty;

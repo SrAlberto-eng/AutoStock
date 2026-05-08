@@ -3,6 +3,7 @@
  * Filtros de movimientos: tipo (chip), búsqueda de texto, rango de fechas.
  * Exportación a CSV con datos obtenidos del backend.
  */
+import { MSG } from './constants/messages.js';
 
 let reportTypeChipController = null;
 let reportItems = [];
@@ -259,7 +260,7 @@ function exportCSV() {
   const rows = reportItems;
 
   if (!rows || rows.length === 0) {
-    showToast('No hay datos para exportar', 'info');
+    showToast(MSG.REPORTS.NO_DATA, 'info');
     return;
   }
 
@@ -288,5 +289,6 @@ function exportCSV() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 
-  showToast('CSV exportado correctamente', 'success');
+  showToast(MSG.REPORTS.CSV_SUCCESS, 'success');
 }
+window.exportCSV = exportCSV;

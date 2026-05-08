@@ -191,7 +191,7 @@
       </div>
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
-      <button type="button" id="btn-toggle-product" class="btn btn-outline" style="color:#FF6B6B; border-color:#FF6B6B;" onclick="toggleProductFromDetail()">Desactivar</button>
+      <button type="button" id="btn-toggle-product" class="btn btn-outline-danger" onclick="toggleProductFromDetail()">Desactivar</button>
       <button type="button" class="btn btn-outline" data-modal-close="modal-product-detail">Cerrar</button>
     </div>
   </div>
@@ -294,7 +294,7 @@
     <div class="modal-body">
       <p class="text-sm" style="color:var(--color-text-muted); margin-bottom:16px;">El proveedor de la factura no está registrado. Agrégalo para que quede asociado a los productos importados.</p>
       <div class="field">
-        <label class="field-label" for="xml-proveedor-nombre">Nombre <span style="color:#FF6B6B;">*</span></label>
+        <label class="field-label" for="xml-proveedor-nombre">Nombre <span class="required-mark">*</span></label>
         <input id="xml-proveedor-nombre" class="input" type="text" placeholder="Nombre del proveedor">
       </div>
       <div class="field" style="margin-top:10px;">
@@ -462,6 +462,6 @@
 <script src="../scripts/filter-chips.js"></script>
 <script src="../scripts/select-ui.js"></script>
 <script src="../scripts/movements.js"></script>
-<script src="../scripts/inventario.js"></script>
+<script type="module" src="../scripts/inventario.js"></script>
 </body>
 </html>

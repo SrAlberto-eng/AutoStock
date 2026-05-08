@@ -3,6 +3,7 @@
  * Carga inventario real desde backend, renderiza tabla dinámica,
  * abre detalle por API y crea productos en lote.
  */
+import { MSG } from './constants/messages.js';
 
 let inventoryChipController = null;
 let inventoryFilterEngine = null;
@@ -244,7 +245,7 @@ function renderTablaProductos(items) {
       '<td>', escapeHtmlSafe(item.nombre), '</td>',
       '<td>', escapeHtmlSafe(categoriaNombre), '</td>',
       '<td>', escapeHtmlSafe(areaNombre), '</td>',
-      '<td class="td-num"', stockActual === 0 ? ' style="color:#FF6B6B;"' : '', '>', escapeHtmlSafe(String(stockActual)), '</td>',
+      '<td class="td-num', stockActual === 0 ? ' text-zero' : '', '">', escapeHtmlSafe(String(stockActual)), '</td>',
       '<td class="td-num">', escapeHtmlSafe(String(stockMin)), '</td>',
       '<td>', escapeHtmlSafe(unidadNombre), '</td>',
       '<td class="text-center">', statusBadge(item.estado), '</td>',
@@ -338,7 +339,8 @@ async function openProductDetail(btn) {
     if (bar) {
       bar.style.width = pct + '%';
       bar.setAttribute('aria-valuenow', pct);
-      bar.style.background = pct <= 0 ? '#FF6B6B' : pct < 50 ? '#FFB86B' : '#6BE89A';
+      bar.classList.remove('success', 'warning', 'danger');
+      bar.classList.add(pct <= 0 ? 'danger' : pct < 50 ? 'warning' : 'success');
     }
 
     const label = document.getElementById('pd-progress-label');
@@ -351,12 +353,12 @@ async function openProductDetail(btn) {
     if (toggleBtn) {
       if (currentDetailProductActivo) {
         toggleBtn.textContent = 'Desactivar';
-        toggleBtn.style.color = '#FF6B6B';
-        toggleBtn.style.borderColor = '#FF6B6B';
+        toggleBtn.classList.add('btn-outline-danger');
+        toggleBtn.classList.remove('btn-outline-success');
       } else {
         toggleBtn.textContent = 'Activar';
-        toggleBtn.style.color = '#4ADE80';
-        toggleBtn.style.borderColor = '#4ADE80';
+        toggleBtn.classList.remove('btn-outline-danger');
+        toggleBtn.classList.add('btn-outline-success');
       }
     }
 
@@ -372,11 +374,11 @@ async function toggleProductFromDetail() {
   try {
     await window.ProductService.toggle(currentDetailProductId);
     var accion = currentDetailProductActivo ? 'desactivado' : 'activado';
-    showToast('Producto ' + accion, 'success');
+    showToast(MSG.INVENTORY.PRODUCT_TOGGLED(accion), 'success');
     modalManager.close('modal-product-detail');
     await loadProductos(getInventarioApiFilters());
   } catch (err) {
-    var msg = (err && err.message) ? err.message : 'Error al cambiar estado';
+    var msg = (err && err.message) ? err.message : MSG.INVENTORY.TOGGLE_ERROR;
     showToast(msg, 'error');
   }
 }
@@ -449,10 +451,10 @@ function _attachNameDebounce(rowEl) {
       try {
         var res = await window.ProductService.checkName(name);
         if (res && res.data && res.data.exists) {
-          nameInput.style.borderColor = '#FFB86B';
+          nameInput.classList.add('input-warning');
           nameInput.title = 'Producto ya registrado';
         } else {
-          nameInput.style.borderColor = '';
+          nameInput.classList.remove('input-warning');
           nameInput.title = '';
         }
       } catch (e) {
@@ -678,7 +680,7 @@ async function saveXmlSupplier() {
   var email = (document.getElementById('xml-proveedor-email').value || '').trim();
   var telefono = (document.getElementById('xml-proveedor-telefono').value || '').trim();
   if (!nombre) {
-    document.getElementById('xml-proveedor-nombre').style.borderColor = '#FF6B6B';
+    document.getElementById('xml-proveedor-nombre').classList.add('input-error');
     return;
   }
   try {
@@ -687,16 +689,16 @@ async function saveXmlSupplier() {
     if (res && res.data && res.data.items) {
       window.store.setState({ suppliers: res.data.items });
     }
-    showToast('Proveedor "' + nombre + '" agregado', 'success');
+    showToast(MSG.INVENTORY.SUPPLIER_ADDED(nombre), 'success');
     modalManager.close('modal-xml-proveedor');
     if (_pendingXmlImport) {
       var pendingRows = _pendingXmlImport.rows;
       _pendingXmlImport = null;
       fillAddProductRowsFromXml(pendingRows);
-      showToast(pendingRows.length + ' producto(s) importado(s) desde CFDI XML', 'success');
+      showToast(MSG.INVENTORY.XML_LOADED_CFDI(pendingRows.length), 'success');
     }
   } catch (err) {
-    showToast((err && err.message) || 'Error al agregar proveedor', 'error');
+    showToast((err && err.message) || MSG.INVENTORY.SUPPLIER_ADD_ERROR, 'error');
   }
 }
 
@@ -706,7 +708,7 @@ function skipXmlSupplier() {
     var pendingRows = _pendingXmlImport.rows;
     _pendingXmlImport = null;
     fillAddProductRowsFromXml(pendingRows);
-    showToast(pendingRows.length + ' producto(s) importado(s) desde CFDI XML', 'success');
+    showToast(MSG.INVENTORY.XML_LOADED_CFDI(pendingRows.length), 'success');
   }
 }
 
@@ -809,14 +811,14 @@ async function importAddProductFromXml(file) {
     }
 
     fillAddProductRowsFromXml(rows);
-    showToast(rows.length + ' producto(s) importado(s) desde CFDI XML', 'success');
+    showToast(MSG.INVENTORY.XML_LOADED_CFDI(rows.length), 'success');
     return;
   }
 
   // Fallback: generic XML format (<producto> nodes)
   const nodes = doc.querySelectorAll('producto, Producto, PRODUCTO');
   if (!nodes.length) {
-    showToast('No se encontraron productos ni conceptos en el XML', 'error');
+    showToast(MSG.INVENTORY.XML_NO_PRODUCTS, 'error');
     return;
   }
 
@@ -832,7 +834,7 @@ async function importAddProductFromXml(file) {
   });
 
   fillAddProductRowsFromXml(rows);
-  showToast(rows.length + ' producto(s) importado(s) desde XML', 'success');
+  showToast(MSG.INVENTORY.XML_LOADED(rows.length), 'success');
 }
 
 function initModalAddProduct() {
@@ -902,10 +904,10 @@ async function saveNewProducts() {
 
     if (!nombre || !categoriaId || !areaId || !unidadId) {
       invalid = true;
-      if (nameInput && !nombre) nameInput.style.borderColor = '#FF6B6B';
-      if (categorySelect && !categoriaId) categorySelect.style.borderColor = '#FF6B6B';
-      if (areaSelect && !areaId) areaSelect.style.borderColor = '#FF6B6B';
-      if (unitSelect && !unidadId) unitSelect.style.borderColor = '#FF6B6B';
+      if (nameInput && !nombre) nameInput.classList.add('input-error');
+      if (categorySelect && !categoriaId) categorySelect.classList.add('input-error');
+      if (areaSelect && !areaId) areaSelect.classList.add('input-error');
+      if (unitSelect && !unidadId) unitSelect.classList.add('input-error');
       return;
     }
 
@@ -922,7 +924,7 @@ async function saveNewProducts() {
   });
 
   if (invalid) {
-    showToast('Completa los campos obligatorios de cada fila', 'error');
+    showToast(MSG.INVENTORY.SAVE_REQUIRED_FIELDS, 'error');
     return;
   }
 
@@ -935,18 +937,18 @@ async function saveNewProducts() {
     var qtyInput = row.querySelector('input[name="quantity"]');
     var productId = productSelect ? Number(productSelect.value || 0) : 0;
     var cantidad = qtyInput ? parseFloat(qtyInput.value) || 0 : 0;
-    if (!productId) { existingInvalid = true; if (productSelect) productSelect.style.borderColor = '#FF6B6B'; return; }
-    if (cantidad <= 0) { existingInvalid = true; if (qtyInput) qtyInput.style.borderColor = '#FF6B6B'; return; }
+    if (!productId) { existingInvalid = true; if (productSelect) productSelect.classList.add('input-error'); return; }
+    if (cantidad <= 0) { existingInvalid = true; if (qtyInput) qtyInput.classList.add('input-error'); return; }
     movementItems.push({ producto_id: productId, cantidad: cantidad });
   });
 
   if (existingInvalid) {
-    showToast('Completa producto y cantidad en las filas de productos existentes', 'error');
+    showToast(MSG.INVENTORY.SAVE_EXISTING_FIELDS, 'error');
     return;
   }
 
   if (payloadItems.length === 0 && movementItems.length === 0) {
-    showToast('No hay productos válidos para guardar', 'error');
+    showToast(MSG.INVENTORY.NO_VALID_PRODUCTS, 'error');
     return;
   }
 
@@ -968,8 +970,8 @@ async function saveNewProducts() {
     var msg = [];
     if (creados) msg.push('Creados: ' + creados);
     if (omitidos) msg.push('Omitidos: ' + omitidos);
-    if (movementItems.length) msg.push('Entradas registradas: ' + movementItems.length);
-    showToast(msg.join(', ') || 'Guardado', 'success');
+    if (movementItems.length) msg.push(MSG.INVENTORY.ENTRIES_COUNT(movementItems.length));
+    showToast(msg.join(', ') || MSG.INVENTORY.SAVED, 'success');
 
     document.dispatchEvent(new CustomEvent('products:changed'));
   } catch (err) {
@@ -1164,3 +1166,19 @@ function openMovementFromRow(productId, type) {
               : 'modal-waste';
   modalManager.open(modalId);
 }
+
+window.toggleProductFromDetail  = toggleProductFromDetail;
+window.toggleApSection          = toggleApSection;
+window.addProductRow            = addProductRow;
+window.removeAddProductRow      = removeAddProductRow;
+window.saveNewProducts          = saveNewProducts;
+window.skipXmlSupplier          = skipXmlSupplier;
+window.saveXmlSupplier          = saveXmlSupplier;
+window.openProductDetail        = openProductDetail;
+window.openMovementFromInventory = openMovementFromRow;
+window.openMovementFromRow       = openMovementFromRow;
+window.toggleRowDropdown        = toggleRowDropdown;
+window.moveNewToExisting        = moveNewToExisting;
+window.moveExistingToNew        = moveExistingToNew;
+window.removeExistingProductRow = removeExistingProductRow;
+window.onExistingProductChange  = onExistingProductChange;

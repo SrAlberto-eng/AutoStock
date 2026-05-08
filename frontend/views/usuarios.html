@@ -72,7 +72,7 @@
 
 <!-- Header acciones -->
 <div style="display:flex; justify-content:flex-end; margin-bottom:12px;">
-  <button id="btn-new-user" class="btn btn-primary" onclick="openUserModal()" aria-label="Crear usuario">
+  <button id="btn-new-user" class="btn btn-primary" aria-label="Crear usuario">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <line x1="12" y1="5" x2="12" y2="19"/>
       <line x1="5" y1="12" x2="19" y2="12"/>
@@ -141,10 +141,10 @@
     <div class="modal-body">
       <input type="hidden" id="user-editing-id" value="">
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-        <div class="field"><label class="field-label" for="user-name">Nombre de usuario <span style="color:#FF6B6B;">*</span></label><input id="user-name" class="input" type="text" placeholder=""></div>
-        <div class="field"><label class="field-label" for="user-email">Correo electrónico <span style="color:#FF6B6B;">*</span></label><input id="user-email" class="input" type="email" placeholder=""></div>
+        <div class="field"><label class="field-label" for="user-name">Nombre de usuario <span class="required-mark">*</span></label><input id="user-name" class="input" type="text" placeholder=""></div>
+        <div class="field"><label class="field-label" for="user-email">Correo electrónico <span class="required-mark">*</span></label><input id="user-email" class="input" type="email" placeholder=""></div>
         <div class="field">
-          <label class="field-label" for="user-role">Rol <span style="color:#FF6B6B;">*</span></label>
+          <label class="field-label" for="user-role">Rol <span class="required-mark">*</span></label>
           <select id="user-role" class="select-native" aria-label="Seleccionar rol">
             <option value="">Seleccionar rol...</option>
           </select>
@@ -159,14 +159,14 @@
 
       <!-- Temp password section (only visible for new users) -->
       <div id="user-password-section" style="margin-top:16px;">
-        <div class="field"><label class="field-label" for="user-temp-pass">Contraseña temporal <span style="color:#FF6B6B;">*</span></label><input id="user-temp-pass" class="input" type="password" placeholder="••••••••"></div>
+        <div class="field"><label class="field-label" for="user-temp-pass">Contraseña temporal <span class="required-mark">*</span></label><input id="user-temp-pass" class="input" type="password" placeholder="••••••••"></div>
         <p class="text-xs text-muted" style="margin-top:4px;">El usuario deberá cambiar su contraseña al iniciar sesión por primera vez.</p>
       </div>
 
     </div>
     <div class="modal-footer">
-      <button type="button" class="btn btn-outline" data-modal-close="modal-user" onclick="clearUserModal()">Cancelar</button>
-      <button type="button" class="btn btn-primary" onclick="saveUser()">Guardar usuario</button>
+      <button id="btn-cancel-user" type="button" class="btn btn-outline" data-modal-close="modal-user">Cancelar</button>
+      <button id="btn-save-user" type="button" class="btn btn-primary">Guardar usuario</button>
     </div>
   </div>
 </div>
@@ -182,6 +182,6 @@
 <script src="../scripts/toast.js"></script>
 <script src="../scripts/modals.js"></script>
 <script src="../scripts/filter-engine.js"></script>
-<script src="../scripts/usuarios.js"></script>
+<script type="module" src="../scripts/usuarios.js"></script>
 </body>
 </html>
