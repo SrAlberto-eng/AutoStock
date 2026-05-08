@@ -198,6 +198,22 @@ async def bulk_create_products(http_request: Request, payload: dict = Body(defau
     )
 
 
+@router.get("/check_name", response_model=ApiResponse[dict])
+async def get_id_product_by_name(http_request: Request, name: str = Query(...)):
+    with get_engine().begin() as conn:
+        product_id = products_repo.find_product_by_name(conn, name)
+
+    return ApiResponse[dict](
+        success=True,
+        data={
+            "exists": product_id is not None,
+            "id": product_id
+        },
+        error=None,
+        timestamp=now_utc(),
+    )
+
+
 @router.get("/{product_id}", response_model=ApiResponse[dict])
 async def get_product_detail(product_id: int = Path(..., gt=0)):
     with get_engine().begin() as conn:
