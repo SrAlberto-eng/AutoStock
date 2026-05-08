@@ -179,9 +179,9 @@ function renderTablaCompras(items) {
     const stockMin = item.stock_min ?? 0;
     const stockLabel = hasStockActual ? item.stock_actual : '-';
 
-    let stockColor = '#E6E6E6';
+    let stockColor = 'var(--foreground)';
     if (!hasStockActual) {
-      stockColor = '#9AA0A6';
+      stockColor = 'var(--foreground-muted)';
     } else if (Number.isFinite(stockActual) && stockActual === 0) {
       stockColor = '#FF6B6B';
     } else if (Number.isFinite(stockActual) && stockActual > 0 && stockActual < stockMin) {

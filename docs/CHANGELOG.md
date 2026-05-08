@@ -1,54 +1,46 @@
-# AutoStock - Release Notes v1.0.0
+# Changelog
 
-## Modulos incluidos en el MVP
-- Autenticacion: login con JWT, sesiones y control basico de acceso por rol.
-- Dashboard: indicadores de estado general y alertas de inventario.
-- Inventario/Productos: CRUD de productos con estados de stock calculados.
-- Movimientos: registro de entradas, salidas y mermas con validaciones operativas.
-- Catalogos: administracion de categorias, areas y unidades de medida.
-- Usuarios: alta, edicion, baja logica y reseteo de contrasena por administrador.
-- Compras: generacion automatica de lista segun stock minimo y ajuste de cantidades.
-- Reportes: consulta de movimientos y auditoria de eventos del sistema.
-- Backups: respaldo manual y programado de base de datos.
+Todos los cambios notables se documentan en este archivo.
+Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
-## Stack tecnico
+---
 
-| Capa | Tecnologia |
-| --- | --- |
-| Frontend | HTML, CSS, JavaScript vanilla |
-| Backend | Python 3 + FastAPI |
-| BD | SQLite + SQLAlchemy Core |
-| Auth | JWT (python-jose) + sesiones persistidas |
-| Deployment | Ejecucion local (loopback 127.0.0.1) |
+## [1.1.0] - 2026-05-08
 
-## Decisiones de diseno
-1. Backend local en loopback para reducir superficie de ataque y simplificar despliegue.
-2. SQLite como base del MVP por portabilidad y costo operativo bajo.
-3. Modelo de roles simple para cubrir permisos criticos sin complejidad excesiva.
-4. Auditoria de acciones clave para trazabilidad de cambios y cumplimiento operativo.
-5. Lista de compras derivada de umbrales de stock para priorizar reposicion automatica.
+### Added
+- Toggle dark/light mode en todas las vistas, incluido login.
+- Módulo `frontend/scripts/theme-switcher.js` compartido: expone `window.initThemeSwitcher()` para que login pueda usar el toggle sin cargar `layout.js` (que tiene session guard).
+- Botón de tema en login posicionado fixed top-right.
 
-## Limitaciones conocidas
-- Sin sincronizacion multi-sede ni replicacion remota.
-- Exportaciones y reportes pueden crecer en tiempo con volumen alto de datos.
-- Rate limiting de login en memoria de proceso (no distribuido).
-- No incluye recuperacion de contrasena por correo en el MVP.
-- Control de permisos puede refinarse por accion granular en futuras versiones.
+### Changed
+- Tema seleccionado persiste entre vistas y sesiones via `localStorage` (`v1_ui_theme`).
+- `doLogout()` preserva `v1_ui_theme` antes de limpiar el estado de sesión, para que el tema no se pierda al cerrar sesión.
+- Modo light rediseñado: fondo off-white (`#F0F0F3`), cards blancas, texto de alto contraste (`#0F0F12` / `#2C2C3A`).
+- Badges de estado (activo/agotado/bajo stock) con colores semánticos adecuados en modo light.
+- Íconos de stat cards con mayor contraste en modo light.
+- Todos los colores hardcodeados en JS y HTML (`#E6E6E6`, `#A6A6A6`, `#1E2022`) reemplazados por variables CSS.
 
-## Instalacion desde cero
+### Fixed
+- Ícono del toggle aparecía vacío al cargar la página (no se inicializaba el SVG inicial).
+- Tema no persistía al navegar entre vistas (se leía con `JSON.parse` un valor que ya era string plano).
+- Texto tenue en modo light por colores hardcodeados en dark que ignoraban las variables CSS.
+- Cards de "Agotados" y "Bajo stock" del dashboard mostraban texto tenue en modo light.
 
-### Requisitos
-- Python 3.11+
-- Navegador moderno
-- Live Server (VS Code) o servidor HTTP local
+---
 
-### Pasos
-1. Clonar el repositorio
-2. `pip install -r backend/requirements.txt`
-3. `cd backend && alembic upgrade head`
-4. `python backend/main.py`
-5. Abrir frontend con Live Server
-6. Login: admin@autostock.local / Admin1234
+## [1.0.0] - 2026-04-01
 
-### Reset de datos (demo/entrega)
-`python backend/scripts/reset_db.py`
+### Added
+- Autenticación con JWT (HS256, 8h), sesiones persistidas y bloqueo por intentos fallidos.
+- CRUD de productos con estados de stock calculados (activo, agotado, bajo stock).
+- Movimientos de inventario: entrada, salida y merma con validaciones operativas.
+- Reversión de salidas y mermas del mismo día (solo administrador).
+- Dashboard con indicadores del día y alertas de inventario.
+- Catálogos: categorías, áreas, unidades de medida y proveedores.
+- Gestión de usuarios: alta, edición, baja lógica y reset de contraseña.
+- Lista de compras generada en tiempo real desde stock mínimo.
+- Reporte de movimientos con filtros y exportación CSV.
+- Auditoría de acciones del sistema.
+- Importación de facturas XML (CFDI) con matching heurístico de productos.
+- Backup automático de SQLite cada 24h (máx. 7 copias).
+- Control de acceso por rol: administrador, gerente, encargado_area, encargado_compras.
