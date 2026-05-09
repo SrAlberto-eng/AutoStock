@@ -277,18 +277,23 @@ function printCompras() {
   printWindow.print();
 }
 
-function exportPDF() {
-  if (!comprasItems.length) { showToast(MSG.PURCHASES.NO_PRODUCTS_EXPORT, 'error'); return; }
+async function exportPDF() {
+  try {
+    const res = await PurchaseService.export();
+    const data = res?.data;
+    if (!data?.items?.length) { showToast(MSG.PURCHASES.NO_PRODUCTS_EXPORT, 'error'); return; }
 
-  const printWindow = window.open('', '_blank', 'width=1024,height=768');
-  if (!printWindow) { showToast(MSG.PURCHASES.PRINT_BLOCKED, 'error'); return; }
+    const printWindow = window.open('', '_blank', 'width=1024,height=768');
+    if (!printWindow) { showToast(MSG.PURCHASES.PRINT_BLOCKED, 'error'); return; }
 
-  const usuario = localStorage.getItem('as_nombre') || 'Usuario no identificado';
-  printWindow.document.open();
-  printWindow.document.write(buildPrintMarkup(comprasItems, new Date().toISOString(), usuario));
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+    printWindow.document.open();
+    printWindow.document.write(buildPrintMarkup(data.items, data.fecha_exportacion, data.usuario));
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  } catch (err) {
+    showToast(err.message || MSG.PURCHASES.NO_PRODUCTS_EXPORT, 'error');
+  }
 }
 
 /** Genera el HTML completo de la ventana de impresión. */

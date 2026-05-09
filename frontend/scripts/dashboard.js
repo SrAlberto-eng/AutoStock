@@ -298,21 +298,16 @@ async function loadDashboard() {
 
 async function _loadSummaryCards() {
   try {
-    const [res, productsRes] = await Promise.all([
-      MovementService.getDashboardSummary(),
-      ProductService.getAll({ limit: 200 }).catch(() => null),
-    ]);
+    const res = await MovementService.getDashboardSummary();
     if (!res || !res.data) return;
     const d = res.data;
     const set = (id, val) => {
       const el = document.getElementById(id);
       if (el) el.textContent = (val !== undefined && val !== null) ? val : '—';
     };
-    set('stat-entradas-hoy', d.entradas_hoy);
-    set('stat-salidas-hoy',  d.salidas_hoy);
-
-    const totalProducts = productsRes?.data?.total ?? productsRes?.data?.items?.length ?? '—';
-    set('stat-productos-total', totalProducts);
+    set('stat-entradas-hoy',    d.entradas_hoy);
+    set('stat-salidas-hoy',     d.salidas_hoy);
+    set('stat-productos-total', d.total_productos ?? '—');
 
 
 
