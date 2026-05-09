@@ -104,20 +104,32 @@ AutoStock/
 
 ### Frontend
 
-- `frontend/views/`: pantallas principales.
-- `frontend/scripts/api-client.js`: cliente HTTP centralizado.
-- `frontend/scripts/login.js`: login y token.
-- `frontend/scripts/dashboard.js`: resumen del sistema.
-- `frontend/scripts/inventario.js`: gestion de productos.
-- `frontend/scripts/compras.js`: lista de compras y exportacion.
-- `frontend/scripts/reportes.js`: consulta de reportes.
-- `frontend/scripts/usuarios.js`: administracion de usuarios.
-- `frontend/scripts/catalogos.js`: catalogos y proveedores.
-- `frontend/scripts/movements.js`: alta de movimientos.
-- `frontend/scripts/xml-importer.js`: previsualizacion de importacion XML.
-- `frontend/scripts/theme-switcher.js`: toggle dark/light compartido entre todas las vistas (incluido login).
-- `frontend/scripts/filter-chips.js`: chips de filtro por tipo en reportes.
-- `frontend/styles/`: variables, estilos globales y animaciones.
+Todos los scripts son ES Modules. Cada vista carga un unico `<script type="module">` sin dependencias clasicas en `<script src>`.
+
+- `frontend/views/`: pantallas principales (una por modulo).
+- `frontend/scripts/api-client.js`: cliente HTTP centralizado con retry, dedup y reinyeccion de Bearer.
+- `frontend/scripts/services.js`: 7 servicios de dominio sobre `apiClient`.
+- `frontend/scripts/store.js`: estado global compartido (user, products, catalogs, suppliers).
+- `frontend/scripts/storage-manager.js`: persistencia de estado UI en `localStorage`.
+- `frontend/scripts/sanitizers.js`: `escapeHtml` para prevenir XSS al inyectar HTML.
+- `frontend/scripts/layout.js`: session guard, sidebar, navegacion activa y modal de perfil.
+- `frontend/scripts/modals.js`: gestor de modales con stack, Escape, backdrop y registro de callbacks de init.
+- `frontend/scripts/toast.js`: notificaciones success/error/info.
+- `frontend/scripts/filter-engine.js`: motor de filtrado local con predicados.
+- `frontend/scripts/filter-chips.js`: chips de filtro activos vinculados al motor.
+- `frontend/scripts/select-ui.js`: helper para construir `<select>` accesibles.
+- `frontend/scripts/xml-importer.js`: parsing de XML CFDI y dropzone.
+- `frontend/scripts/theme-switcher.js`: toggle dark/light persistente, compartido con login.
+- `frontend/scripts/movements.js`: logica compartida de modales entrada/salida/merma.
+- `frontend/scripts/constants/messages.js`: constantes de texto de la interfaz por dominio.
+- `frontend/scripts/login.js`: flujo de login y cambio de contrasena forzado.
+- `frontend/scripts/dashboard.js`: tarjetas de resumen, movimientos recientes e importacion XML CFDI.
+- `frontend/scripts/inventario.js`: tabla de productos, filtros, modal de detalle, alta en lote.
+- `frontend/scripts/compras.js`: lista de compras en tiempo real, ajuste de cantidad e impresion.
+- `frontend/scripts/reportes.js`: reporte de movimientos con filtros y exportacion CSV.
+- `frontend/scripts/usuarios.js`: administracion de usuarios por rol.
+- `frontend/scripts/catalogos.js`: CRUD de categorias, areas, unidades y proveedores.
+- `frontend/styles/`: variables CSS, estilos globales y animaciones.
 
 ## Requisitos
 
@@ -292,11 +304,19 @@ Base URL: `http://127.0.0.1:8765`
 
 ## Estado actual y pendientes
 
-- Implementado: CRUD principal de dominio, auth por rol, auditoria, compras en tiempo real, reportes y toggle de tema dark/light persistente en todas las vistas.
-- Pendiente 1: matching semantico real en `backend/ai/matcher.py`.
-- Pendiente 2: endpoint real para guardar perfil desde UI (`frontend/scripts/layout.js`).
-- Pendiente 3: vista de audit-log (endpoint `GET /api/reportes/audit-log` existe, frontend no lo consume aun).
-- Pendiente 4: empaquetar como .exe con Tauri (Rust no instalado; ver CLAUDE.md para pasos).
+### Implementado
+
+- CRUD principal de dominio, auth por rol, auditoria y compras en tiempo real.
+- Reportes de movimientos con filtros y exportacion CSV.
+- Toggle dark/light persistente en todas las vistas incluido login.
+- Frontend completamente migrado a ES Modules: cero globals en `window`, cero `onclick` en HTML para logica propia, un solo `<script type="module">` por vista.
+
+### Pendiente
+
+- Matching semantico real en `backend/ai/matcher.py` (actualmente heuristico).
+- Endpoint para guardar perfil desde UI (boton existe, `saveProfile()` es placeholder).
+- Vista de audit-log (endpoint `GET /api/reportes/audit-log` existe, frontend no lo consume aun).
+- Empaquetar como .exe con Tauri (Rust no instalado).
 
 ## Problemas comunes
 
