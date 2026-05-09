@@ -297,9 +297,13 @@ async function loadDashboard() {
 }
 
 async function _loadSummaryCards() {
+  const summaryGrid = document.querySelector('.summary-grid');
   try {
     const res = await MovementService.getDashboardSummary();
-    if (!res || !res.data) return;
+    if (!res || !res.data) {
+      summaryGrid?.removeAttribute('data-skeleton');
+      return;
+    }
     const d = res.data;
     const set = (id, val) => {
       const el = document.getElementById(id);
@@ -308,6 +312,7 @@ async function _loadSummaryCards() {
     set('stat-entradas-hoy',    d.entradas_hoy);
     set('stat-salidas-hoy',     d.salidas_hoy);
     set('stat-productos-total', d.total_productos ?? '—');
+    summaryGrid?.removeAttribute('data-skeleton');
 
 
 
@@ -403,7 +408,9 @@ async function _loadSummaryCards() {
         });
       }
     }
-  } catch (_) {}
+  } catch (_) {
+    summaryGrid?.removeAttribute('data-skeleton');
+  }
 }
 
 async function _loadRecentMovements() {

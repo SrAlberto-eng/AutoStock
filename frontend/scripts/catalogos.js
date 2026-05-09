@@ -110,6 +110,9 @@ async function loadCatalogos() {
     renderTabla('unidades',   data.unidades);
   } catch (err) {
     store.setState({ ui: { loading: false } });
+    renderTabla('categorias', []);
+    renderTabla('areas',      []);
+    renderTabla('unidades',   []);
     showToast(err?.message || 'Error cargando catálogos', 'error');
   }
 }
@@ -253,6 +256,7 @@ async function loadProveedores() {
     proveedoresData = res?.data?.items || [];
     renderProveedores(proveedoresData);
   } catch (err) {
+    renderProveedores([]);
     showToast(err?.message || 'Error cargando proveedores', 'error');
   } finally {
     store.setState({ ui: { loading: false } });

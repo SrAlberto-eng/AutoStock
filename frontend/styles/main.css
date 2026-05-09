@@ -1648,6 +1648,79 @@ hr, .separator {
 [data-theme="light"] .badge-primary { background-color: #DBEAFE; color: #1D4ED8; }
 [data-theme="light"] .badge-muted   { background-color: #F1F5F9; color: #334155; }
 
+/* ─── Skeleton Screens ───────────────────────────────────────────────────── */
+
+/* Base shimmer — aplicable a cualquier placeholder */
+.skeleton,
+[data-skeleton] .stat-value,
+[data-skeleton] .stat-label,
+[data-skeleton] .stat-card-icon-wrapper {
+  background-color: #1a1d20;
+  background-image: linear-gradient(
+    90deg,
+    #1a1d20 25%,
+    #262c31 50%,
+    #1a1d20 75%
+  );
+  background-size: 400px 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+/* Stat cards en estado de carga */
+[data-skeleton] .stat-value {
+  color: transparent !important;
+  pointer-events: none;
+}
+[data-skeleton] .stat-label {
+  color: transparent !important;
+}
+[data-skeleton] .stat-card-icon-wrapper {
+  border-radius: 50% !important;
+}
+[data-skeleton] .stat-card-icon-wrapper svg {
+  opacity: 0;
+}
+
+/* Filas skeleton en tabla */
+.skeleton-row td {
+  padding: 10px 8px;
+}
+.skeleton-row td > .skeleton {
+  display: block;
+  height: 14px;
+}
+
+/* Sidebar nav skeleton items */
+.nav-item-skel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  pointer-events: none;
+}
+#app-sidebar.collapsed .nav-item-skel {
+  justify-content: center;
+  padding: 10px 0;
+}
+#app-sidebar.collapsed .nav-item-skel .skeleton:last-child {
+  display: none;
+}
+
+/* Light mode overrides */
+[data-theme="light"] .skeleton,
+[data-theme="light"] [data-skeleton] .stat-value,
+[data-theme="light"] [data-skeleton] .stat-label,
+[data-theme="light"] [data-skeleton] .stat-card-icon-wrapper {
+  background-color: #dde0e6;
+  background-image: linear-gradient(
+    90deg,
+    #dde0e6 25%,
+    #eef0f4 50%,
+    #dde0e6 75%
+  );
+}
+
 /* Print styles */
 @media print {
   #app-sidebar,
