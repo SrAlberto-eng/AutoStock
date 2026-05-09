@@ -295,9 +295,9 @@ function buildPrintMarkup(items, fechaIso, usuario) {
       <td>${escapeHtml(item.categoria_nombre || 'Sin categoría')}</td>
       <td>${escapeHtml(item.area_nombre      || 'Sin área')}</td>
       <td>${escapeHtml(item.unidad_nombre    || 'N/A')}</td>
-      <td style="text-align:right;">${escapeHtml(item.stock_actual ?? 0)}</td>
-      <td style="text-align:right;">${escapeHtml(item.stock_min   ?? 0)}</td>
-      <td style="text-align:right;">${escapeHtml(qty)}</td>
+      <td style="text-align:right;">${escapeHtml(String(item.stock_actual ?? 0))}</td>
+      <td style="text-align:right;">${escapeHtml(String(item.stock_min   ?? 0))}</td>
+      <td style="text-align:right;">${escapeHtml(String(qty))}</td>
     </tr>`;
   }).join('');
 
