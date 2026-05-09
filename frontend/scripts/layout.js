@@ -9,10 +9,13 @@
  *              - initProfileDropdown(): menú desplegable del perfil en el topbar
  */
 
-(function () {
-  'use strict';
+import { apiClient }         from './api-client.js';
+import { showToast }         from './toast.js';
+import { storageManager }    from './storage-manager.js';
+import { initThemeSwitcher } from './theme-switcher.js';
+import { modalManager }      from './modals.js';
 
-  /* ─── Estado ─────────────────────────────────────────── */
+/* ─── Estado ─────────────────────────────────────────── */
   var sidebarCollapsed = false;
   var mobileOpen       = false;
 
@@ -105,11 +108,10 @@
 
     if (!sidebar || !toggleBtn) return;
 
-    var savedSidebar = window.storageManager && typeof window.storageManager.loadUIState === 'function'
-      ? window.storageManager.loadUIState('sidebar')
-      : null;
+    var savedSidebarRaw = null;
+    try { savedSidebarRaw = JSON.parse(localStorage.getItem('v1_ui_sidebar')); } catch (_) {}
 
-    if (savedSidebar && savedSidebar.collapsed === true) {
+    if (savedSidebarRaw && savedSidebarRaw.collapsed === true) {
       setSidebarCollapsed(true);
     }
 
@@ -121,13 +123,13 @@
 
     toggleBtn.addEventListener('click', function () {
       setSidebarCollapsed(!sidebarCollapsed);
-      if (!window.storageManager) return;
-
-      if (sidebarCollapsed && typeof window.storageManager.saveUIState === 'function') {
-        window.storageManager.saveUIState('sidebar', { collapsed: true });
-      } else if (!sidebarCollapsed && typeof window.storageManager.clearUIState === 'function') {
-        window.storageManager.clearUIState('sidebar');
-      }
+      try {
+        if (sidebarCollapsed) {
+          localStorage.setItem('v1_ui_sidebar', JSON.stringify({ collapsed: true }));
+        } else {
+          localStorage.removeItem('v1_ui_sidebar');
+        }
+      } catch (_) {}
     });
 
     // Prevent reload when clicking the link to the current page
@@ -217,9 +219,6 @@
     });
   }
 
-  // Expose selected helpers for page-specific scripts that invoke them directly.
-  window.initActiveNav = initActiveNav;
-
   /* ════════════════════════════════════════════════════════
      PROFILE DROPDOWN
      ════════════════════════════════════════════════════════ */
@@ -265,8 +264,6 @@
       dd.style.position = '';
     });
   }
-  window.closeAllDropdowns = closeAllDropdowns;
-
   /* ════════════════════════════════════════════════════════
      SESSION GUARD & PERMISSIONS
      ════════════════════════════════════════════════════════ */
@@ -359,16 +356,14 @@
   function doLogout() {
     var token = localStorage.getItem('as_token');
     if (token) {
-      window.apiClient.post('/auth/logout').catch(function () { /* fire and forget */ });
+      apiClient.post('/auth/logout').catch(function () { /* fire and forget */ });
     }
     localStorage.removeItem('as_token');
     localStorage.removeItem('as_expires_at');
     localStorage.removeItem('as_role');
     localStorage.removeItem('as_nombre');
     var savedTheme = localStorage.getItem('v1_ui_theme');
-    if (window.storageManager && typeof window.storageManager.clearAll === 'function') {
-      window.storageManager.clearAll();
-    }
+    storageManager.clearAll();
     if (savedTheme) localStorage.setItem('v1_ui_theme', savedTheme);
     window.location.href = '../views/login.html';
   }
@@ -439,7 +434,7 @@
         btn.addEventListener('click', function () {
           hydrateProfileFromLocalStorage();
           hydrateProfileFromApi();
-          if (window.modalManager) window.modalManager.open('modal-profile');
+          modalManager.open('modal-profile');
         });
 
         if (insertBefore) {
@@ -454,7 +449,7 @@
           e.preventDefault();
           hydrateProfileFromLocalStorage();
           hydrateProfileFromApi();
-          if (window.modalManager) window.modalManager.open('modal-profile');
+          modalManager.open('modal-profile');
         };
       }
     });
@@ -525,24 +520,22 @@
 
       if (newPass && newPass.value) {
         if (!currPass || !currPass.value) {
-          if (typeof showToast === 'function') showToast('Ingresa tu contraseña actual', 'error');
+          showToast('Ingresa tu contraseña actual', 'error');
           return;
         }
         if (newPass.value !== (confirm ? confirm.value : '')) {
-          if (typeof showToast === 'function') showToast('Las contraseñas no coinciden', 'error');
+          showToast('Las contraseñas no coinciden', 'error');
           return;
         }
         if (newPass.value.length < 6) {
-          if (typeof showToast === 'function') showToast('La contraseña debe tener al menos 6 caracteres', 'error');
+          showToast('La contraseña debe tener al menos 6 caracteres', 'error');
           return;
         }
       }
 
       // TODO F5: guardar perfil
-      if (typeof showToast === 'function') {
-        showToast('Actualización de perfil lista (endpoint pendiente)', 'success');
-      }
-      if (window.modalManager) window.modalManager.close('modal-profile');
+      showToast('Actualización de perfil lista (endpoint pendiente)', 'success');
+      modalManager.close('modal-profile');
     };
   }
 
@@ -554,10 +547,10 @@
 
   async function hydrateProfileFromApi() {
     var token = localStorage.getItem('as_token');
-    if (!token || !window.apiClient) return;
+    if (!token) return;
 
     try {
-      var response = await window.apiClient.get('/auth/me');
+      var response = await apiClient.get('/auth/me');
       var me = response && response.data ? response.data : null;
       if (!me) return;
 
@@ -639,30 +632,11 @@
     initMobileMenu();
     initActiveNav();
     initProfileDropdown();
-    window.initThemeSwitcher();
+    initThemeSwitcher();
   }
 
-  // Ejecutamos inicialización de inmediato (ya que layout.js carga al final del body)
-  // Esto evita el parpadeo (FOUC) provocado por esperar a DOMContentLoaded
-  init();
+init();
 
-  async function initPageData() {
-    try {
-      store.setState({ ui: { loading: true } });
+async function initPageData() {}
 
-      var catalogs = await window.CatalogService.getAllCatalogs();
-      store.setState({
-        catalogs: catalogs,
-        ui: { loading: false }
-      });
-    } catch (err) {
-      store.setState({ ui: { loading: false, error: err.message } });
-      // Solo mostrar toast si es un error real (no 401,
-      // el apiClient ya maneja ese caso con redirect)
-      if (err.status !== 401) {
-        showToast('Error cargando catálogos. Recarga la página.', 'error');
-      }
-    }
-  }
-
-})();
+export { initActiveNav, doLogout, closeAllDropdowns, getUserSnapshot };

@@ -1,212 +1,164 @@
 /**
  * compras.js
- * Lista de compras: actualización de cantidades, eliminación de filas,
- * totales en tiempo real, exportación PDF e impresión.
+ * Lista de compras en tiempo real: ajuste de cantidades en memoria,
+ * eliminación de filas, totales, exportación PDF e impresión.
  */
+import { MSG }                              from './constants/messages.js';
+import { slugify }                          from './utils.js';
+import { showToast }                        from './toast.js';
+import { storageManager }                   from './storage-manager.js';
+import { FilterEngine }                     from './filter-engine.js';
+import { escapeHtml }                       from './sanitizers.js';
+import { PurchaseService, CatalogService, ProviderService } from './services.js';
+import { initActiveNav } from './layout.js';
 
-let comprasFilterEngine = null;
-let comprasItems = [];
 const COMPRAS_VIEW_NAME = 'compras';
 
-function saveComprasUIState() {
-  if (!window.storageManager || typeof window.storageManager.saveUIState !== 'function') return;
+/** Copia local de los ítems para cálculos en memoria. */
+let comprasItems = [];
+let comprasFilterEngine = null;
 
-  var categoryFilter = document.getElementById('filter-category');
-  var providerFilter = document.getElementById('filter-provider');
-  window.storageManager.saveUIState(COMPRAS_VIEW_NAME, {
-    categoria: categoryFilter ? categoryFilter.value || '' : '',
-    proveedor: providerFilter ? providerFilter.value || '' : '',
+// ── Persistencia de filtros ───────────────────────────────────────────────
+
+function saveUIState() {
+  if (typeof storageManager?.saveUIState !== 'function') return;
+  storageManager.saveUIState(COMPRAS_VIEW_NAME, {
+    categoria: document.getElementById('filter-category')?.value || '',
+    proveedor: document.getElementById('filter-provider')?.value  || '',
   });
 }
 
-function restoreComprasUIState() {
-  if (!window.storageManager || typeof window.storageManager.loadUIState !== 'function') return;
-
-  var saved = window.storageManager.loadUIState(COMPRAS_VIEW_NAME);
+function restoreUIState() {
+  if (typeof storageManager?.loadUIState !== 'function') return;
+  const saved = storageManager.loadUIState(COMPRAS_VIEW_NAME);
   if (!saved) return;
-
-  var categoryFilter = document.getElementById('filter-category');
-  var providerFilter = document.getElementById('filter-provider');
+  const categoryFilter = document.getElementById('filter-category');
+  const providerFilter  = document.getElementById('filter-provider');
   if (categoryFilter && saved.categoria != null) categoryFilter.value = String(saved.categoria);
-  if (providerFilter && saved.proveedor != null) providerFilter.value = String(saved.proveedor);
+  if (providerFilter  && saved.proveedor  != null) providerFilter.value  = String(saved.proveedor);
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-  initActiveNav();
-  restoreComprasUIState();
+// ── Carga de datos ────────────────────────────────────────────────────────
 
-  comprasFilterEngine = new FilterEngine({
-    rowSelector: '#compras-tbody tr',
-    getCriteria: function () {
-      return {
-        category: (document.getElementById('filter-category')?.value || '').toLowerCase(),
-        provider: (document.getElementById('filter-provider')?.value || '').toLowerCase(),
-      };
-    },
-    mapRow: function (row) {
-      return {
-        rowCategory: (row.dataset.category || '').toLowerCase(),
-        rowProvider: (row.dataset.provider || '').toLowerCase(),
-      };
-    },
-    predicates: [
-      function (criteria, rowData) {
-        return !criteria.category || rowData.rowCategory === criteria.category;
-      },
-      function (criteria, rowData) {
-        return !criteria.provider || rowData.rowProvider === criteria.provider;
-      },
-    ],
-    setEmptyState: function (result) {
-      updateEmptyState(result.visible, result.total);
-    },
-    onAfterApply: function () {
-      updateTotals();
-    },
-  });
-
-  comprasFilterEngine.bindTriggers([
-    { selector: '#filter-category', event: 'change' },
-    { selector: '#filter-provider', event: 'change' },
-  ]);
-
-  var categoryFilter = document.getElementById('filter-category');
-  var providerFilter = document.getElementById('filter-provider');
-  if (categoryFilter) {
-    categoryFilter.addEventListener('change', saveComprasUIState);
-  }
-  if (providerFilter) {
-    providerFilter.addEventListener('change', saveComprasUIState);
-  }
-
-  await loadCompras();
-  saveComprasUIState();
-});
-
+/** Carga la lista de compras del backend y repinta la tabla. */
 async function loadCompras() {
   try {
-    const res = await window.PurchaseService.getAll();
-    const items = res.data?.items || [];
-    comprasItems = items;
-    populateFilterOptions(items);
-    renderTablaCompras(items);
-    calcularTotal(items);
+    const res = await PurchaseService.getAll();
+    comprasItems = res.data?.items || [];
+    await populateFilterOptions(comprasItems);
+    renderTablaCompras(comprasItems);
+    syncTotals(comprasItems);
   } catch (err) {
     showToast(err.message, 'error');
   }
 }
 
+/** Rellena los selects de categoría y proveedor con opciones únicas. */
 async function populateFilterOptions(items) {
-  var categoryFilter = document.getElementById('filter-category');
-  var providerFilter = document.getElementById('filter-provider');
+  const categoryFilter = document.getElementById('filter-category');
+  const providerFilter  = document.getElementById('filter-provider');
 
-  // Load categories from CatalogService
   if (categoryFilter) {
-    var selected = categoryFilter.value;
-    var categories = [];
-    try {
-      var cats = await window.CatalogService.getAllCatalogs();
-      if (cats && Array.isArray(cats.categorias)) {
-        categories = cats.categorias.map(function (c) { return c.nombre; });
-      }
-    } catch (_) {}
-    // Fallback: also add categories from items in case API fails
-    if (!categories.length) {
-      var catSet = new Set();
-      items.forEach(function (item) { if (item.categoria_nombre) catSet.add(item.categoria_nombre); });
-      categories = Array.from(catSet);
-    }
+    const selected = categoryFilter.value;
+    const categories = await fetchCategoryNames(items);
     categoryFilter.innerHTML = '<option value="">Todas las categorías</option>'
-      + categories.sort().map(function (c) {
-        return '<option value="' + normalizeFilterValue(c) + '">' + window.escapeHtml(c) + '</option>';
-      }).join('');
+      + categories.sort().map(c =>
+          `<option value="${slugify(c)}">${escapeHtml(c)}</option>`
+        ).join('');
     categoryFilter.value = selected;
   }
 
-  // Load providers from ProviderService
   if (providerFilter) {
-    var selected = providerFilter.value;
-    var providers = [];
-    try {
-      var res = await window.ProviderService.getAll();
-      if (res && res.data && Array.isArray(res.data.items)) {
-        providers = res.data.items.map(function (p) { return p.nombre; });
-      }
-    } catch (_) {}
-    if (!providers.length) {
-      var provSet = new Set();
-      items.forEach(function (item) { if (item.proveedor_nombre) provSet.add(item.proveedor_nombre); });
-      providers = Array.from(provSet);
-    }
+    const selected = providerFilter.value;
+    const providers = await fetchProviderNames(items);
     providerFilter.innerHTML = '<option value="">Todos los proveedores</option>'
-      + providers.sort().map(function (p) {
-        return '<option value="' + normalizeFilterValue(p) + '">' + window.escapeHtml(p) + '</option>';
-      }).join('');
+      + providers.sort().map(p =>
+          `<option value="${slugify(p)}">${escapeHtml(p)}</option>`
+        ).join('');
     providerFilter.value = selected;
   }
 }
 
-
-function normalizeFilterValue(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+/** Obtiene nombres de categorías desde el catálogo; usa los ítems como fallback. */
+async function fetchCategoryNames(items) {
+  try {
+    const cats = await CatalogService.getAllCatalogs();
+    if (Array.isArray(cats?.categorias) && cats.categorias.length) {
+      return cats.categorias.map(c => c.nombre);
+    }
+  } catch (_) {}
+  return [...new Set(items.map(i => i.categoria_nombre).filter(Boolean))];
 }
 
+/** Obtiene nombres de proveedores; usa los ítems como fallback. */
+async function fetchProviderNames(items) {
+  try {
+    const res = await ProviderService.getAll();
+    if (Array.isArray(res?.data?.items) && res.data.items.length) {
+      return res.data.items.map(p => p.nombre);
+    }
+  } catch (_) {}
+  return [...new Set(items.map(i => i.proveedor_nombre).filter(Boolean))];
+}
+
+// ── Renderizado ───────────────────────────────────────────────────────────
+
+/**
+ * Retorna la cantidad a mostrar para un ítem (ajustada > sugerida > 0).
+ * @param {object} item
+ */
 function getDisplayQty(item) {
   const qty = item.cantidad_ajustada ?? item.cantidad_sugerida ?? 0;
   return Number.isFinite(Number(qty)) ? Number(qty) : 0;
 }
 
+/**
+ * Clase CSS para la celda de stock actual según su nivel.
+ * @param {boolean} hasStock
+ * @param {number|null} stockActual
+ * @param {number} stockMin
+ */
+function stockCellClass(hasStock, stockActual, stockMin) {
+  if (!hasStock) return 'text-muted';
+  if (stockActual === 0) return 'text-zero';
+  if (stockActual > 0 && stockActual < stockMin) return 'text-warning';
+  return '';
+}
+
+/** Pinta toda la tabla de compras con los ítems recibidos. */
 function renderTablaCompras(items) {
   const tbody = document.getElementById('compras-tbody');
-  if (!tbody) {
-    return;
-  }
+  if (!tbody) return;
 
   tbody.innerHTML = items.map(item => {
-    const qty = getDisplayQty(item);
-    const category = item.categoria_nombre || 'Sin categoría';
-    const provider = item.proveedor_nombre || 'Sin proveedor';
-    const area = item.area_nombre || 'Sin área';
-    const unit = item.unidad_nombre || 'N/A';
-    const hasStockActual = item.stock_actual !== null && item.stock_actual !== undefined;
-    const stockActual = hasStockActual ? Number(item.stock_actual) : null;
-    const stockMin = item.stock_min ?? 0;
-    const stockLabel = hasStockActual ? item.stock_actual : '-';
-
-    let stockColor = 'var(--foreground)';
-    if (!hasStockActual) {
-      stockColor = 'var(--foreground-muted)';
-    } else if (Number.isFinite(stockActual) && stockActual === 0) {
-      stockColor = '#FF6B6B';
-    } else if (Number.isFinite(stockActual) && stockActual > 0 && stockActual < stockMin) {
-      stockColor = '#FFB86B';
-    }
+    const qty        = getDisplayQty(item);
+    const category   = item.categoria_nombre  || 'Sin categoría';
+    const provider   = item.proveedor_nombre  || 'Sin proveedor';
+    const area       = item.area_nombre       || 'Sin área';
+    const unit       = item.unidad_nombre     || 'N/A';
+    const stockActual = item.stock_actual != null ? Number(item.stock_actual) : null;
+    const stockMin    = item.stock_min ?? 0;
+    const stockLabel  = stockActual != null ? stockActual : '-';
+    const cellClass   = stockCellClass(stockActual != null, stockActual, stockMin);
 
     return `
-      <tr data-product-id="${item.producto_id}" data-category="${normalizeFilterValue(category)}" data-provider="${normalizeFilterValue(provider)}">
-        <td>${window.escapeHtml(item.nombre_producto)}</td>
-        <td>${window.escapeHtml(category)}</td>
-        <td>${window.escapeHtml(area)}</td>
-        <td class="td-num" style="color:${stockColor};">${window.escapeHtml(String(stockLabel))}</td>
-        <td class="td-num">${window.escapeHtml(String(stockMin))}</td>
-        <td>${window.escapeHtml(unit)}</td>
+      <tr data-product-id="${item.producto_id}"
+          data-category="${slugify(category)}"
+          data-provider="${slugify(provider)}">
+        <td>${escapeHtml(item.nombre_producto)}</td>
+        <td>${escapeHtml(category)}</td>
+        <td>${escapeHtml(area)}</td>
+        <td class="td-num ${cellClass}">${escapeHtml(String(stockLabel))}</td>
+        <td class="td-num">${escapeHtml(String(stockMin))}</td>
+        <td>${escapeHtml(unit)}</td>
         <td>
-          <input
-            type="number" min="1" value="${window.escapeHtml(qty)}"
+          <input type="number" min="1" value="${qty}"
             class="input compras-qty-input" style="width:90px;"
             aria-label="Cantidad a comprar"
-            data-product-id="${item.producto_id}"
-            onblur="updateQty(this)"
-          >
+            data-product-id="${item.producto_id}">
         </td>
         <td class="no-print td-actions">
-          <button class="btn btn-ghost btn-icon" onclick="removeCompraRow(this)" aria-label="Quitar de la lista">
+          <button class="btn btn-ghost btn-icon" data-action="remove" aria-label="Quitar de la lista">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="m19 6-.867 12.142A2 2 0 0 1 16.138 20H7.862a2 2 0 0 1-1.995-1.858L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
           </button>
         </td>
@@ -214,45 +166,38 @@ function renderTablaCompras(items) {
     `;
   }).join('');
 
-  if (comprasFilterEngine) {
-    comprasFilterEngine.apply();
-  } else {
-    updateTotals();
-    updateEmptyState();
-  }
+  comprasFilterEngine ? comprasFilterEngine.apply() : updateEmptyState();
 }
 
-function applyFilters() {
-  if (comprasFilterEngine) comprasFilterEngine.apply();
-}
+// ── Acciones de tabla ─────────────────────────────────────────────────────
 
-// ── Quantity update (in-memory only) ──────────────────────────────────────
+/**
+ * Actualiza la cantidad ajustada del ítem en memoria cuando el input pierde el foco.
+ * @param {HTMLInputElement} input
+ */
 function updateQty(input) {
-  const val = parseInt(input.value);
-  if (isNaN(val) || val < 1) {
-    input.value = 1;
-  }
+  const val = parseInt(input.value, 10);
+  if (!Number.isFinite(val) || val < 1) input.value = 1;
 
   const productId = Number(input.dataset.productId || input.closest('tr')?.dataset.productId);
-  if (productId) {
-    const index = comprasItems.findIndex(item => item.producto_id === productId);
-    if (index >= 0) {
-      comprasItems[index].cantidad_ajustada = parseInt(input.value, 10);
-    }
-  }
+  if (!productId) return;
+
+  const index = comprasItems.findIndex(i => i.producto_id === productId);
+  if (index >= 0) comprasItems[index].cantidad_ajustada = parseInt(input.value, 10);
 
   updateTotals();
 }
 
-// ── Remove row (in-memory only) ────────────────────────────────────────────
+/**
+ * Elimina la fila de compra con una animación de fade.
+ * @param {HTMLElement} btn - Botón dentro de la fila.
+ */
 function removeCompraRow(btn) {
   const row = btn.closest('tr');
   if (!row) return;
 
   const productId = Number(row.dataset.productId);
-  if (productId) {
-    comprasItems = comprasItems.filter(item => item.producto_id !== productId);
-  }
+  if (productId) comprasItems = comprasItems.filter(i => i.producto_id !== productId);
 
   row.style.transition = 'opacity 200ms ease';
   row.style.opacity = '0';
@@ -263,154 +208,169 @@ function removeCompraRow(btn) {
   }, 200);
 }
 
-// ── Totals ─────────────────────────────────────────────────────────────────
+// ── Totales y estado vacío ────────────────────────────────────────────────
+
 function updateTotals() {
   const rows = document.querySelectorAll('#compras-tbody tr:not([style*="display: none"])');
   let totalUnits = 0;
   rows.forEach(row => {
-    const qtyInput = row.querySelector('.compras-qty-input');
-    if (qtyInput) totalUnits += parseInt(qtyInput.value) || 0;
+    const input = row.querySelector('.compras-qty-input');
+    if (input) totalUnits += parseInt(input.value, 10) || 0;
   });
 
-  const totalItemsEl = document.getElementById('total-items');
-  const totalUnitsEl = document.getElementById('total-units');
-  const countEl      = document.getElementById('compras-count');
-  if (totalItemsEl) totalItemsEl.textContent = rows.length;
-  if (totalUnitsEl) totalUnitsEl.textContent = totalUnits;
-  if (countEl)      countEl.textContent = rows.length;
+  const setTextById = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  };
+  setTextById('total-items', rows.length);
+  setTextById('total-units', totalUnits);
+  setTextById('compras-count', rows.length);
 }
 
-function calcularTotal(items) {
-  const totalUnits = items.reduce((sum, item) => sum + getDisplayQty(item), 0);
-  const totalItemsEl = document.getElementById('total-items');
-  const totalUnitsEl = document.getElementById('total-units');
-  const countEl = document.getElementById('compras-count');
-
-  if (totalItemsEl) totalItemsEl.textContent = items.length;
-  if (totalUnitsEl) totalUnitsEl.textContent = totalUnits;
-  if (countEl) countEl.textContent = items.length;
-
+/**
+ * Sincroniza los contadores con el array de ítems recién cargado.
+ * @param {object[]} items
+ */
+function syncTotals(items) {
+  const totalUnits = items.reduce((sum, i) => sum + getDisplayQty(i), 0);
+  const setTextById = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  };
+  setTextById('total-items', items.length);
+  setTextById('total-units', totalUnits);
+  setTextById('compras-count', items.length);
   updateEmptyState(items.length, items.length);
-  if (comprasFilterEngine) {
-    comprasFilterEngine.apply();
-  }
+  comprasFilterEngine?.apply();
 }
 
-function updateEmptyState(visibleRowsOverride, totalRowsOverride) {
-  const tbody = document.getElementById('compras-tbody');
+function updateEmptyState(visibleOverride, totalOverride) {
+  const tbody    = document.getElementById('compras-tbody');
   const emptyMsg = document.getElementById('compras-empty');
   if (!tbody || !emptyMsg) return;
 
-  const totalRows = typeof totalRowsOverride === 'number'
-    ? totalRowsOverride
-    : tbody.querySelectorAll('tr').length;
-  const visibleRows = typeof visibleRowsOverride === 'number'
-    ? visibleRowsOverride
-    : tbody.querySelectorAll('tr:not([style*="display: none"])').length;
+  const total   = typeof totalOverride   === 'number' ? totalOverride   : tbody.querySelectorAll('tr').length;
+  const visible = typeof visibleOverride === 'number' ? visibleOverride : tbody.querySelectorAll('tr:not([style*="display: none"])').length;
 
-  if (totalRows === 0) {
-    emptyMsg.textContent = 'No hay productos en la lista de compras.';
-    emptyMsg.style.display = 'block';
-    return;
-  }
-
-  if (visibleRows === 0) {
-    emptyMsg.textContent = 'No se encontraron productos con los filtros aplicados.';
-    emptyMsg.style.display = 'block';
-    return;
-  }
-
+  if (total === 0)   { emptyMsg.textContent = MSG.PURCHASES.NO_PRODUCTS;     emptyMsg.style.display = 'block'; return; }
+  if (visible === 0) { emptyMsg.textContent = MSG.PURCHASES.NO_MATCH_FILTERS; emptyMsg.style.display = 'block'; return; }
   emptyMsg.style.display = 'none';
 }
 
-// ── Print ──────────────────────────────────────────────────────────────────
-function printCompras() {
-  const usuario = localStorage.getItem('as_nombre') || 'Usuario no identificado';
-  const printWindow = window.open('', '_blank', 'width=1024,height=768');
-  if (!printWindow) {
-    showToast('El navegador bloqueó la ventana de impresión.', 'error');
-    return;
-  }
+// ── Impresión y exportación ───────────────────────────────────────────────
 
+function printCompras() {
+  const printWindow = window.open('', '_blank', 'width=1024,height=768');
+  if (!printWindow) { showToast(MSG.PURCHASES.PRINT_BLOCKED, 'error'); return; }
+
+  const usuario = localStorage.getItem('as_nombre') || 'Usuario no identificado';
   printWindow.document.open();
-  printWindow.document.write(buildPrintMarkup(comprasItems || [], new Date().toISOString(), usuario));
+  printWindow.document.write(buildPrintMarkup(comprasItems, new Date().toISOString(), usuario));
   printWindow.document.close();
   printWindow.focus();
   printWindow.print();
 }
 
-function buildPrintMarkup(items, fechaExportacion, usuario) {
-  const fecha = fechaExportacion ? new Date(fechaExportacion).toLocaleString('es-MX') : new Date().toLocaleString('es-MX');
-  const nombreUsuario = usuario || localStorage.getItem('as_nombre') || 'Usuario no identificado';
+function exportPDF() {
+  if (!comprasItems.length) { showToast(MSG.PURCHASES.NO_PRODUCTS_EXPORT, 'error'); return; }
+
+  const printWindow = window.open('', '_blank', 'width=1024,height=768');
+  if (!printWindow) { showToast(MSG.PURCHASES.PRINT_BLOCKED, 'error'); return; }
+
+  const usuario = localStorage.getItem('as_nombre') || 'Usuario no identificado';
+  printWindow.document.open();
+  printWindow.document.write(buildPrintMarkup(comprasItems, new Date().toISOString(), usuario));
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
+
+/** Genera el HTML completo de la ventana de impresión. */
+function buildPrintMarkup(items, fechaIso, usuario) {
+  const fecha  = new Date(fechaIso).toLocaleString('es-MX');
   const rows = items.map(item => {
     const qty = getDisplayQty(item);
-    return `
-      <tr>
-        <td>${window.escapeHtml(item.nombre_producto)}</td>
-        <td>${window.escapeHtml(item.categoria_nombre || 'Sin categoría')}</td>
-        <td>${window.escapeHtml(item.area_nombre || 'Sin área')}</td>
-        <td>${window.escapeHtml(item.unidad_nombre || 'N/A')}</td>
-        <td style="text-align:right;">${window.escapeHtml(item.stock_actual ?? 0)}</td>
-        <td style="text-align:right;">${window.escapeHtml(item.stock_min ?? 0)}</td>
-        <td style="text-align:right;">${window.escapeHtml(qty)}</td>
-      </tr>
-    `;
+    return `<tr>
+      <td>${escapeHtml(item.nombre_producto)}</td>
+      <td>${escapeHtml(item.categoria_nombre || 'Sin categoría')}</td>
+      <td>${escapeHtml(item.area_nombre      || 'Sin área')}</td>
+      <td>${escapeHtml(item.unidad_nombre    || 'N/A')}</td>
+      <td style="text-align:right;">${escapeHtml(String(item.stock_actual ?? 0))}</td>
+      <td style="text-align:right;">${escapeHtml(String(item.stock_min   ?? 0))}</td>
+      <td style="text-align:right;">${escapeHtml(String(qty))}</td>
+    </tr>`;
   }).join('');
 
   return `<!DOCTYPE html>
-  <html lang="es">
-    <head>
-      <meta charset="UTF-8">
-      <title>Lista de Compras</title>
-      <style>
-        body { font-family: 'Segoe UI', sans-serif; margin: 32px; color: #1f2937; }
-        h1 { margin-bottom: 8px; }
-        .meta { margin-bottom: 20px; color: #4b5563; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #d1d5db; padding: 8px 10px; font-size: 12px; }
-        th { background: #f3f4f6; text-align: left; }
-      </style>
-    </head>
-    <body>
-      <h1>Lista de Compras</h1>
-      <div class="meta">Fecha: ${window.escapeHtml(fecha)}<br>Usuario: ${window.escapeHtml(nombreUsuario)}</div>
-      <table>
-        <thead>
-          <tr>
-            <th>Producto</th>
-            <th>Categoría</th>
-            <th>Área</th>
-            <th>Unidad</th>
-            <th>Stock actual</th>
-            <th>Stock mínimo</th>
-            <th>Cantidad a comprar</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </body>
-  </html>`;
+  <html lang="es"><head><meta charset="UTF-8"><title>Lista de Compras</title>
+  <style>
+    body { font-family:'Segoe UI',sans-serif; margin:32px; color:#1f2937; }
+    h1   { margin-bottom:8px; }
+    .meta { margin-bottom:20px; color:#4b5563; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { border:1px solid #d1d5db; padding:8px 10px; font-size:12px; }
+    th { background:#f3f4f6; text-align:left; }
+  </style></head><body>
+    <h1>Lista de Compras</h1>
+    <div class="meta">Fecha: ${escapeHtml(fecha)}<br>Usuario: ${escapeHtml(usuario)}</div>
+    <table>
+      <thead><tr>
+        <th>Producto</th><th>Categoría</th><th>Área</th><th>Unidad</th>
+        <th>Stock actual</th><th>Stock mínimo</th><th>Cantidad a comprar</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </body></html>`;
 }
 
-// ── Export PDF ─────────────────────────────────────────────────────────────
-function exportPDF() {
-  const items = comprasItems || [];
-  if (items.length === 0) {
-    showToast('No hay productos para exportar.', 'error');
-    return;
-  }
+// ── Inicialización ────────────────────────────────────────────────────────
 
-  const usuario = localStorage.getItem('as_nombre') || 'Usuario no identificado';
-  const printWindow = window.open('', '_blank', 'width=1024,height=768');
+document.addEventListener('DOMContentLoaded', async () => {
+  initActiveNav();
+  restoreUIState();
 
-  if (!printWindow) {
-    showToast('El navegador bloqueó la ventana de impresión.', 'error');
-    return;
-  }
+  comprasFilterEngine = new FilterEngine({
+    rowSelector: '#compras-tbody tr',
+    getCriteria: () => ({
+      category: document.getElementById('filter-category')?.value?.toLowerCase() || '',
+      provider: document.getElementById('filter-provider')?.value?.toLowerCase() || '',
+    }),
+    mapRow: row => ({
+      rowCategory: (row.dataset.category || '').toLowerCase(),
+      rowProvider:  (row.dataset.provider  || '').toLowerCase(),
+    }),
+    predicates: [
+      (c, r) => !c.category || r.rowCategory === c.category,
+      (c, r) => !c.provider  || r.rowProvider  === c.provider,
+    ],
+    setEmptyState: result => updateEmptyState(result.visible, result.total),
+    onAfterApply:  ()     => updateTotals(),
+  });
 
-  printWindow.document.open();
-  printWindow.document.write(buildPrintMarkup(items, new Date().toISOString(), usuario));
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
-}
+  comprasFilterEngine.bindTriggers([
+    { selector: '#filter-category', event: 'change' },
+    { selector: '#filter-provider', event: 'change' },
+  ]);
+
+  document.getElementById('filter-category')?.addEventListener('change', saveUIState);
+  document.getElementById('filter-provider')?.addEventListener('change', saveUIState);
+
+  // Botones estáticos de la barra de acciones
+  document.getElementById('btn-refresh-compras')?.addEventListener('click', loadCompras);
+  document.getElementById('btn-print-compras')  ?.addEventListener('click', printCompras);
+  document.getElementById('btn-export-pdf')     ?.addEventListener('click', exportPDF);
+
+  // Event delegation: click (remove) y focusout (qty update)
+  const tbody = document.getElementById('compras-tbody');
+  tbody?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-action="remove"]');
+    if (btn) removeCompraRow(btn);
+  });
+  tbody?.addEventListener('focusout', e => {
+    const input = e.target.closest('.compras-qty-input');
+    if (input) updateQty(input);
+  });
+
+  await loadCompras();
+  saveUIState();
+});

@@ -8,4 +8,4 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-window.escapeHtml = escapeHtml;
+export { escapeHtml };

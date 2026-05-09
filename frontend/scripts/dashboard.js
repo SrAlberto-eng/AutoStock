@@ -5,10 +5,47 @@
  *
  * La lógica de modales de movimientos (entrada/salida/merma) vive en movements.js.
  */
+import { MSG }          from './constants/messages.js';
+import { showToast }    from './toast.js';
+import { store }        from './store.js';
+import { storageManager } from './storage-manager.js';
+import { escapeHtml }   from './sanitizers.js';
+import { MovementService, ProductService } from './services.js';
+import { readXmlFile, xmlAttrOrChild, initXmlDropzone } from './xml-importer.js';
+import { initActiveNav } from './layout.js';
+import { modalManager } from './modals.js';
+import {
+  initModalEntry, initModalExit, initModalWaste,
+  addEntryRow, removeEntryRow, confirmEntry,
+  addExitRow, removeExitRow, confirmExit,
+  confirmWaste,
+  resetEntryRows,
+} from './movements.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Marcar nav activo
   initActiveNav();
+
+  // Registrar callbacks de init de modales de movimientos
+  modalManager.registerInit('modal-entry', initModalEntry);
+  modalManager.registerInit('modal-exit',  initModalExit);
+  modalManager.registerInit('modal-waste', initModalWaste);
+
+  // Event delegation: botones estáticos de modales
+  document.getElementById('btn-add-entry-row')  ?.addEventListener('click', addEntryRow);
+  document.getElementById('btn-confirm-entry')  ?.addEventListener('click', confirmEntry);
+  document.getElementById('btn-add-exit-row')   ?.addEventListener('click', addExitRow);
+  document.getElementById('btn-confirm-exit')   ?.addEventListener('click', confirmExit);
+  document.getElementById('btn-confirm-waste')  ?.addEventListener('click', confirmWaste);
+
+  // Event delegation: botones de eliminar fila (dinámicos)
+  document.getElementById('entry-rows')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-action="remove"]');
+    if (btn) removeEntryRow(Number(btn.closest('tr')?.dataset.rowId));
+  });
+  document.getElementById('exit-rows')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-action="remove"]');
+    if (btn) removeExitRow(Number(btn.closest('tr')?.dataset.rowId));
+  });
 
   // Cargar datos reales del dashboard
   loadDashboard();
@@ -30,14 +67,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const href = link.getAttribute('href') || '';
       const estadoMatch = href.match(/estado=([^&]+)/);
       const estadoParam = estadoMatch ? decodeURIComponent(estadoMatch[1]) : '';
-      const estadoDeseado = estadoParam === 'agotado' ? 'Agotado' : 'Poca existencia';
+      const estadoDeseado = estadoParam === 'agotado' ? 'agotado' : 'bajo_minimo';
 
-      if (window.storageManager && typeof window.storageManager.saveUIState === 'function') {
-        const prev = (typeof window.storageManager.loadUIState === 'function')
-          ? (window.storageManager.loadUIState('inventario') || {})
-          : {};
+      if (typeof storageManager.saveUIState === 'function') {
+        const prev = storageManager.loadUIState('inventario') || {};
 
-        window.storageManager.saveUIState('inventario', Object.assign({}, prev, {
+        storageManager.saveUIState('inventario', Object.assign({}, prev, {
           estado: estadoDeseado
         }));
       }
@@ -82,7 +117,7 @@ function readFileAsBase64(file) {
       resolve(base64 || '');
     };
     reader.onerror = function () {
-      reject(new Error('No se pudo leer el archivo XML'));
+      reject(new Error(MSG.DASHBOARD.XML_READ_ERROR));
     };
     reader.readAsDataURL(file);
   });
@@ -109,7 +144,7 @@ function updateEntryUnitLabel(row, product) {
   const unitLabel = row.querySelector('[id^="entry-unit-"]');
   if (!unitLabel) return;
 
-  const units = (window.store && window.store.getState().catalogs.unidades) || [];
+  const units = store.getState().catalogs.unidades || [];
   const unit = units.find(function (item) {
     return String(item.id) === String(product.unidad_id);
   });
@@ -121,7 +156,7 @@ function renderImportPreview(previewRows) {
   const tbody = document.getElementById('entry-rows');
   if (!tbody) return;
 
-  const products = (window.store && window.store.getState().products) || [];
+  const products = store.getState().products || [];
   if (!products.length) return;
 
   const rows = Array.from(tbody.querySelectorAll('tr'));
@@ -162,9 +197,9 @@ function renderImportPreview(previewRows) {
   });
 
   if (autoMatched > 0) {
-    showToast('Se aplicaron ' + autoMatched + ' sugerencia(s) automáticas.', 'success');
+    showToast(MSG.DASHBOARD.XML_AUTO_MATCHED(autoMatched), 'success');
   } else {
-    showToast('Sin coincidencias automáticas. Completa manualmente.', 'info');
+    showToast(MSG.DASHBOARD.XML_NO_AUTO_MATCH, 'info');
   }
 }
 
@@ -172,17 +207,32 @@ async function handleXmlPreview(productosParseados, xmlBase64) {
   if (!xmlBase64 || !productosParseados || !productosParseados.length) return;
 
   try {
-    await Promise.all([_ensureProductsLoaded(), _ensureCatalogsLoaded()]);
-    showToast('Consultando sugerencias...', 'info', 2000);
+    let products = store.getState().products || [];
 
-    const res = await window.MovementService.previewImport(xmlBase64);
+    if (!products.length) {
+      const productsRes = await ProductService.getAll({ limit: 200 }).catch(() => null);
+      products = productsRes?.data?.items || [];
+      if (products.length) {
+        store.setState({ products });
+      }
+    }
+
+    if (!products.length) {
+      showToast(MSG.DASHBOARD.XML_SUGGESTIONS_UNAVAILABLE, 'info');
+      return;
+    }
+
+    showToast(MSG.DASHBOARD.XML_SUGGESTIONS_LOADING, 'info', 2000);
+
+    const res = await MovementService.previewImport(xmlBase64);
     const preview = res && res.data
       ? (res.data.lineas || res.data.productos || [])
       : [];
 
     renderImportPreview(preview);
   } catch (err) {
-    showToast('Sugerencias no disponibles. Completa manualmente.', 'info');
+    console.error('XML preview error:', err);
+    showToast(MSG.DASHBOARD.XML_SUGGESTIONS_UNAVAILABLE, 'info');
   }
 }
 
@@ -197,7 +247,7 @@ async function importEntryFromXml(file) {
 
   const conceptoNodes = doc.querySelectorAll('cfdi\\:Concepto, Concepto');
   if (!conceptoNodes.length) {
-    showToast('No se encontraron conceptos en el XML', 'error');
+    showToast(MSG.DASHBOARD.XML_NO_CONCEPTS, 'error');
     return;
   }
 
@@ -212,7 +262,7 @@ async function importEntryFromXml(file) {
   }));
 
   fillEntryRowsFromXml(rows);
-  showToast(`XML cargado: ${rows.length} concepto(s)`, 'success');
+  showToast(MSG.DASHBOARD.XML_LOADED(rows.length), 'success');
   await handleXmlPreview(rows, xmlBase64);
 }
 
@@ -220,8 +270,7 @@ function fillEntryRowsFromXml(rows) {
   const tbody = document.getElementById('entry-rows');
   if (!tbody) return;
 
-  tbody.innerHTML = '';
-  _movEntryRowCount = 0;
+  resetEntryRows();
 
   rows.forEach((r) => {
     addEntryRow({
@@ -240,9 +289,7 @@ function fillEntryRowsFromXml(rows) {
 // ── Dashboard data loading ──────────────────────────────────────────────────
 
 async function loadDashboard() {
-  // Primero asegurar que los productos estén cargados (necesario para movimientos recientes)
-  await _ensureProductsLoaded();
-  // Luego cargar el resto en paralelo
+  // Cargar dashboard summary y movimientos recientes en paralelo
   await Promise.allSettled([
     _loadSummaryCards(),
     _loadRecentMovements(),
@@ -251,7 +298,7 @@ async function loadDashboard() {
 
 async function _loadSummaryCards() {
   try {
-    const res = await window.MovementService.getDashboardSummary();
+    const res = await MovementService.getDashboardSummary();
     if (!res || !res.data) return;
     const d = res.data;
     const set = (id, val) => {
@@ -260,18 +307,16 @@ async function _loadSummaryCards() {
     };
     set('stat-entradas-hoy', d.entradas_hoy);
     set('stat-salidas-hoy',  d.salidas_hoy);
-    const products = window.store && window.store.getState().products;
-    set('stat-productos-total', products ? products.length : '—');
 
-    const esc = (value) => {
-      if (typeof window.escapeHtml === 'function') return window.escapeHtml(value);
-      return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    };
+    try {
+      const productsRes = await ProductService.getAll({ limit: 200 });
+      const totalProducts = productsRes?.data?.total ?? productsRes?.data?.items?.length ?? '—';
+      set('stat-productos-total', totalProducts);
+    } catch (_) {
+      set('stat-productos-total', '—');
+    }
+
+
 
     const alertCards = document.querySelectorAll('.alerts-grid .card');
     const agotadosWrap = alertCards[0] ? alertCards[0].querySelector('.space-y-3') : null;
@@ -285,7 +330,7 @@ async function _loadSummaryCards() {
         const msg = document.createElement('p');
         msg.className = 'text-sm text-muted';
         msg.style.padding = '8px 0';
-        msg.textContent = 'Sin productos agotados';
+        msg.textContent = MSG.DASHBOARD.NO_STOCK_OUT;
         agotadosWrap.appendChild(msg);
       } else {
         agotados.forEach((item) => {
@@ -302,10 +347,7 @@ async function _loadSummaryCards() {
           left.style.gap = '12px';
 
           const dot = document.createElement('span');
-          dot.style.width = '8px';
-          dot.style.height = '8px';
-          dot.style.borderRadius = '50%';
-          dot.style.backgroundColor = '#FF6B6B';
+          dot.className = 'movement-dot movement-dot--merma';
 
           const info = document.createElement('div');
           const name = document.createElement('p');
@@ -329,7 +371,7 @@ async function _loadSummaryCards() {
         const msg = document.createElement('p');
         msg.className = 'text-sm text-muted';
         msg.style.padding = '8px 0';
-        msg.textContent = 'Todos los productos tienen stock suficiente';
+        msg.textContent = MSG.DASHBOARD.ALL_STOCK_OK;
         bajoMinWrap.appendChild(msg);
       } else {
         bajoMin.forEach((item, index) => {
@@ -346,10 +388,7 @@ async function _loadSummaryCards() {
           left.style.gap = '12px';
 
           const dot = document.createElement('span');
-          dot.style.width = '8px';
-          dot.style.height = '8px';
-          dot.style.borderRadius = '50%';
-          dot.style.backgroundColor = '#FFB86B';
+          dot.className = 'movement-dot movement-dot--warning';
 
           const info = document.createElement('div');
           const name = document.createElement('p');
@@ -360,7 +399,7 @@ async function _loadSummaryCards() {
           stock.className = 'text-xs text-muted';
           const actual = item && item.stock_actual != null ? item.stock_actual : 0;
           const minimo = item && item.stock_min != null ? item.stock_min : 0;
-          stock.textContent = 'Stock: ' + actual + ' / Mín: ' + minimo;
+          stock.textContent = MSG.DASHBOARD.STOCK_LABEL(actual, minimo);
 
           info.appendChild(name);
           info.appendChild(stock);
@@ -379,11 +418,11 @@ async function _loadRecentMovements() {
   if (!list) return;
 
   const setFallback = function () {
-    list.innerHTML = '<p class="text-sm text-muted" style="padding:8px 0;">Sin movimientos recientes</p>';
+    list.innerHTML = '<p class="text-sm text-muted" style="padding:8px 0;">' + MSG.DASHBOARD.NO_RECENT_MOVEMENTS + '</p>';
   };
 
   try {
-    const res = await window.MovementService.getAll({ limit: 5 });
+    const res = await MovementService.getAll({ limit: 5 });
     if (!res || !res.data || !res.data.items) {
       setFallback();
       return;
@@ -393,22 +432,21 @@ async function _loadRecentMovements() {
       setFallback();
       return;
     }
-    const colors = { entrada: '#6BE89A', salida: '#5AA9FF', merma: '#FF6B6B' };
-    const products = (window.store && window.store.getState().products) || [];
+    const products = store.getState().products || [];
     list.innerHTML = items.map(function (m) {
       const sign  = m.tipo === 'entrada' ? '+' : '-';
-      const color = colors[m.tipo] || 'var(--foreground-muted)';
+      const dotClass = 'movement-dot movement-dot--' + (m.tipo || 'salida');
       const prod  = products.find(function (p) { return p.id === m.producto_id; });
       const nombre = m.producto_nombre || (prod ? (prod.nombre || prod.sku || ('Producto #' + m.producto_id)) : ('Producto #' + m.producto_id));
       const fecha   = new Date(m.fecha_sistema);
       const diffMin = Math.round((Date.now() - fecha.getTime()) / 60000);
-      const tiempo  = diffMin < 1    ? 'Ahora'
-                    : diffMin < 60   ? 'Hace ' + diffMin + ' min'
-                    : diffMin < 1440 ? 'Hace ' + Math.round(diffMin / 60) + ' h'
+      const tiempo  = diffMin < 1    ? MSG.DASHBOARD.TIME_NOW
+                    : diffMin < 60   ? MSG.DASHBOARD.TIME_MINUTES(diffMin)
+                    : diffMin < 1440 ? MSG.DASHBOARD.TIME_HOURS(Math.round(diffMin / 60))
                     : fecha.toLocaleDateString('es-MX');
       return '<div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--divider);">'
         + '<div style="display:flex; align-items:center; gap:12px;">'
-        + '<div class="movement-dot" style="background-color:' + color + ';" aria-label="' + m.tipo + '"></div>'
+        + '<div class="' + dotClass + '" aria-label="' + m.tipo + '"></div>'
         + '<div>'
         + '<p class="text-sm">' + escapeHtml(nombre) + '</p>'
         + '<p class="text-xs text-muted">' + sign + m.cantidad + '</p>'

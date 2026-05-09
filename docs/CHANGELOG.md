@@ -5,6 +5,26 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ---
 
+## [1.2.0] - 2026-05-08
+
+### Changed
+- **Migración completa a ES Modules (Fases 4a–4d):** todos los scripts de infraestructura del frontend convertidos de IIFE con `window.*` a módulos ES con `import`/`export`. Cada HTML ahora carga un único `<script type="module">`.
+- `modals.js`: patrón de registro de callbacks (`registerInit`) reemplaza la llamada dinámica `window[initFnName]()`. Delegación `data-modal-open` elimina todos los `onclick` para abrir modales.
+- `movements.js`: convertido a ES Module; `data-action="remove"` en filas reemplaza `onclick="removeEntryRow(X)"`.
+- `layout.js`: convertido a ES Module; `init()` corre al nivel de módulo (los módulos son `defer`).
+- `select-ui.js`: importa `escapeHtml` desde `sanitizers.js` en lugar de leer `window.escapeHtml`.
+- Todos los mensajes de toast en `movements.js` reemplazados por constantes `MSG.MOVEMENTS.*`.
+
+### Fixed
+- Sidebar no persistía entre vistas: `storageManager` ya no expone en `window`; corregido con acceso directo a `localStorage` (`v1_ui_sidebar`).
+- Dashboard: tarjeta "Total productos" aparecía vacía cuando `_ensureProductsLoaded` rechazaba por `window.store` indefinido tras la migración.
+- Filtro "Ver todos" en inventario no aplicaba: valor almacenado era `'Agotado'` pero los chips usaban `'agotado'`/`'bajo_minimo'`.
+- Punto de alerta en inventario para productos "bajo mínimo" era azul (`.movement-dot--salida`) en lugar de amarillo; añadida clase `.movement-dot--warning` con `var(--status-warning)`.
+- Lista de compras no incluía productos agotados (`stock_actual = 0, stock_min = 0`): condición ampliada a `stock_actual < stock_min OR stock_actual = 0`.
+- Distribución de columnas inconsistente en compras: añadido `table-layout:fixed` + `<colgroup>`.
+
+---
+
 ## [1.1.0] - 2026-05-08
 
 ### Added

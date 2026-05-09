@@ -59,9 +59,9 @@
           <div id="profile-dropdown" class="dropdown-menu profile-menu hidden" role="menu">
             <div class="profile-menu-header"><div class="avatar avatar-lg"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div><div class="font-medium text-sm"><!-- Admin Usuario --></div><div class="text-xs text-muted"><!-- admin@empresa.com --></div></div></div>
             <hr class="separator">
-            <button class="dropdown-item" role="menuitem" onclick="modalManager.open('modal-profile')">Mi Perfil</button>
+            <button class="dropdown-item" role="menuitem" data-modal-open="modal-profile">Mi Perfil</button>
             <hr class="separator">
-            <button class="dropdown-item dropdown-item-danger" role="menuitem" onclick="window.location.href='login.html'">Cerrar Sesión</button>
+            <button class="dropdown-item dropdown-item-danger" role="menuitem">Cerrar Sesión</button>
           </div>
         </div>
       </div>
@@ -83,15 +83,15 @@
           </select>
         </div>
         <div style="display:flex; gap:8px; margin-left:auto; flex-shrink:0;">
-          <button class="btn btn-outline btn-sm" onclick="loadCompras()" aria-label="Actualizar lista">
+          <button id="btn-refresh-compras" class="btn btn-outline btn-sm" aria-label="Actualizar lista">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
             Actualizar
           </button>
-          <button class="btn btn-outline btn-sm" onclick="printCompras()" aria-label="Imprimir lista">
+          <button id="btn-print-compras" class="btn btn-outline btn-sm" aria-label="Imprimir lista">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>
             Imprimir
           </button>
-          <button class="btn btn-primary btn-sm" onclick="exportPDF()" aria-label="Exportar como PDF">
+          <button id="btn-export-pdf" class="btn btn-primary btn-sm" aria-label="Exportar como PDF">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
             Exportar PDF
           </button>
@@ -100,7 +100,17 @@
 
       <!-- Table -->
       <div class="table-wrapper" id="compras-table-wrapper">
-        <table id="compras-table">
+        <table id="compras-table" style="table-layout:fixed; width:100%;">
+          <colgroup>
+            <col style="width:25%;">
+            <col style="width:13%;">
+            <col style="width:12%;">
+            <col style="width:11%;">
+            <col style="width:11%;">
+            <col style="width:10%;">
+            <col style="width:13%;">
+            <col style="width:5%;">
+          </colgroup>
           <thead>
             <tr>
               <th class="text-left">Producto</th>
@@ -110,7 +120,7 @@
               <th class="text-center">Stock mínimo</th>
               <th class="text-left">Unidad</th>
               <th class="text-left">Cantidad a comprar</th>
-              <th class="no-print" style="width:5%;"></th>
+              <th class="no-print"></th>
             </tr>
           </thead>
           <tbody id="compras-tbody"></tbody>
@@ -133,16 +143,6 @@
 </div><!-- /app-layout -->
 
 <div id="toast-container"></div>
-<script src="../scripts/sanitizers.js"></script>
-<script src="../scripts/storage-manager.js"></script>
-<script src="../scripts/api-client.js"></script>
-<script src="../scripts/services.js"></script>
-<script src="../scripts/store.js"></script>
-<script src="../scripts/theme-switcher.js"></script>
-<script src="../scripts/layout.js"></script>
-<script src="../scripts/toast.js"></script>
-<script src="../scripts/modals.js"></script>
-<script src="../scripts/filter-engine.js"></script>
-<script src="../scripts/compras.js"></script>
+<script type="module" src="../scripts/compras.js"></script>
 </body>
 </html>

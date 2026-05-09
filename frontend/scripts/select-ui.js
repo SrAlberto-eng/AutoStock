@@ -3,19 +3,11 @@
  * Small shared helper for rendering native selects with consistent markup.
  */
 
-(function () {
-  'use strict';
+import { escapeHtml } from './sanitizers.js';
 
-  function escapeValue(value) {
-    var str = value == null ? '' : String(value);
-    if (typeof window.escapeHtml === 'function') return window.escapeHtml(str);
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/\"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
+function escapeValue(value) {
+  return escapeHtml(value == null ? '' : String(value));
+}
 
   function buildOption(option) {
     var value = escapeValue(option && option.value != null ? option.value : '');
@@ -64,8 +56,7 @@
     });
   }
 
-  window.selectUI = {
-    buildNativeSelect: buildNativeSelect,
-    buildSelectWithPlaceholder: buildSelectWithPlaceholder,
-  };
-})();
+export const selectUI = {
+  buildNativeSelect: buildNativeSelect,
+  buildSelectWithPlaceholder: buildSelectWithPlaceholder,
+};

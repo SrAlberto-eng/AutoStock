@@ -1,169 +1,135 @@
 /**
- * Script: login.js
- * Vista asociada: views/login.html
- * Dependencias: toast.js
- * Descripción: Lógica de la pantalla de inicio de sesión.
- *              - Toggle de visibilidad de contraseña
- *              - Validación del formulario (campos no vacíos)
- *              - Spinner de carga durante el proceso
- *              - Redirección a dashboard.html tras login exitoso
+ * login.js
+ * Toggle de contraseña, validación, spinner de carga y redirección
+ * al dashboard. Fuerza cambio de contraseña si el backend lo indica.
  */
+import { MSG }             from './constants/messages.js';
+import { showToast }       from './toast.js';
+import { apiClient }       from './api-client.js';
+import { initThemeSwitcher } from './theme-switcher.js';
 
-(function () {
-  'use strict';
+const form          = document.getElementById('login-form');
+const identifierInput = document.getElementById('identifier');
+const passInput     = document.getElementById('password');
+const toggleBtn     = document.getElementById('password-toggle');
+const iconEye       = document.getElementById('icon-eye');
+const iconEyeOff    = document.getElementById('icon-eye-off');
+const submitBtn     = document.getElementById('submit-btn');
+const submitLabel   = document.getElementById('submit-label');
+const submitSpinner = document.getElementById('submit-spinner');
+const rememberChk   = document.getElementById('remember-user');
 
-  var form         = document.getElementById('login-form');
-  var identifierInput   = document.getElementById('identifier');
-  var passInput    = document.getElementById('password');
-  var toggleBtn    = document.getElementById('password-toggle');
-  var iconEye      = document.getElementById('icon-eye');
-  var iconEyeOff   = document.getElementById('icon-eye-off');
-  var submitBtn    = document.getElementById('submit-btn');
-  var submitLabel  = document.getElementById('submit-label');
-  var submitSpinner= document.getElementById('submit-spinner');
+let showPassword = false;
 
-  var rememberChk  = document.getElementById('remember-user');
-  var showPassword = false;
+initThemeSwitcher();
 
-  if (window.initThemeSwitcher) window.initThemeSwitcher();
+const savedIdentifier = localStorage.getItem('as_remember_identifier');
+if (savedIdentifier && identifierInput) {
+  identifierInput.value = savedIdentifier;
+  if (rememberChk) rememberChk.checked = true;
+}
 
-  // Restore remembered identifier
-  var savedIdentifier = localStorage.getItem('as_remember_identifier');
-  if (savedIdentifier && identifierInput) {
-    identifierInput.value = savedIdentifier;
-    if (rememberChk) rememberChk.checked = true;
+function getDashboardHref() {
+  const path = window.location?.pathname || '';
+  const inViews = path.includes('/views/') || path.includes('\\views\\');
+  return inViews ? 'dashboard.html' : 'views/dashboard.html';
+}
+
+function setLoading(loading) {
+  if (!submitBtn || !submitLabel || !submitSpinner) return;
+  submitBtn.disabled           = loading;
+  submitLabel.textContent      = loading ? MSG.AUTH.LOADING : MSG.AUTH.SUBMIT;
+  submitSpinner.classList.toggle('hidden', !loading);
+}
+
+// ── Toggle contraseña ─────────────────────────────────────────────────────
+
+toggleBtn?.addEventListener('click', () => {
+  showPassword = !showPassword;
+  passInput.type = showPassword ? 'text' : 'password';
+  iconEye.classList.toggle('hidden', showPassword);
+  iconEyeOff.classList.toggle('hidden', !showPassword);
+  toggleBtn.style.color = showPassword ? 'var(--foreground)' : 'var(--foreground-muted)';
+});
+
+// ── Submit ────────────────────────────────────────────────────────────────
+
+form?.addEventListener('submit', async e => {
+  e.preventDefault();
+
+  const identifier = identifierInput?.value.trim() || '';
+  const password   = passInput?.value.trim()       || '';
+
+  if (!identifier || !password) {
+    showToast(MSG.AUTH.FIELDS_REQUIRED, 'error');
+    return;
   }
 
-  function getDashboardHref() {
-    var path = (window.location && window.location.pathname) ? window.location.pathname : '';
-    var inViewsDir = path.indexOf('/views/') !== -1 || path.indexOf('\\views\\') !== -1;
-    return inViewsDir ? 'dashboard.html' : 'views/dashboard.html';
-  }
+  setLoading(true);
 
-  /* ─── Toggle contraseña ─────────────────────────────── */
-  if (toggleBtn) {
-    toggleBtn.addEventListener('click', function () {
-      showPassword = !showPassword;
-      passInput.type = showPassword ? 'text' : 'password';
-      iconEye.classList.toggle('hidden', showPassword);
-      iconEyeOff.classList.toggle('hidden', !showPassword);
-      toggleBtn.style.color = showPassword ? 'var(--foreground)' : 'var(--foreground-muted)';
-    });
-  }
+  try {
+    const result = await apiClient.post('/auth/login', { identifier, password });
 
-  /* ─── Submit ─────────────────────────────────────────── */
-  if (form) {
-    form.addEventListener('submit', async function (e) {
-      e.preventDefault();
-
-      var identifier = identifierInput ? identifierInput.value.trim() : '';
-      var password = passInput  ? passInput.value.trim()  : '';
-
-      if (!identifier || !password) {
-        showToast('Por favor, completa todos los campos', 'error');
-        return;
-      }
-
-      // Show loading state
-      setLoading(true);
-
-      try {
-        if (!window.apiClient || typeof window.apiClient.post !== 'function') {
-          throw new Error('Cliente API no disponible');
-        }
-
-        var result = await window.apiClient.post('/auth/login', {
-          identifier: identifier,
-          password: password
-        });
-
-        if (!result || result.success !== true) {
-          showToast((result && result.error) || 'Error de conexión. Verifica que el servidor esté activo.', 'error');
-          return;
-        }
-
-        var data = result.data || {};
-        if (!data.token) {
-          throw new Error('Respuesta de login inválida: token no recibido');
-        }
-
-        localStorage.setItem('as_token',      data.token);
-        localStorage.setItem('as_expires_at', data.expires_at);
-        localStorage.setItem('as_role',       data.role);
-        localStorage.setItem('as_nombre',     data.nombre);
-        if (data.user_id) localStorage.setItem('as_user_id', data.user_id);
-
-        // Remember user
-        if (rememberChk && rememberChk.checked) {
-          localStorage.setItem('as_remember_identifier', identifier);
-        } else {
-          localStorage.removeItem('as_remember_identifier');
-        }
-
-        if (data.debe_cambiar_password === true) {
-          localStorage.setItem('debe_cambiar_password', '1');
-          showToast('Debes cambiar tu contraseña antes de continuar', 'warning', 4000);
-          setTimeout(function () {
-            promptForcePasswordChange();
-          }, 250);
-          return;
-        }
-
-        showToast('Bienvenido, ' + data.nombre, 'success');
-        setLoading(false);
-        window.location.href = getDashboardHref();
-        return;
-      } catch (err) {
-        if (err && err.status === 401) {
-          showToast('Credenciales incorrectas', 'error');
-          if (passInput) passInput.value = '';
-          return;
-        }
-
-        if (err && err.status === 403) {
-          showToast('Cuenta bloqueada. Contacta al administrador.', 'error');
-          if (passInput) passInput.value = '';
-          return;
-        }
-
-        // Normaliza errores al formato { success, data, error }
-        var errorResult = {
-          success: false,
-          data: null,
-          error: (err && err.message) || 'Error de conexión. Verifica que el servidor esté activo.'
-        };
-        showToast(errorResult.error, 'error');
-      } finally {
-        setLoading(false);
-      }
-    });
-  }
-
-  function setLoading(loading) {
-    if (!submitBtn || !submitLabel || !submitSpinner) return;
-    submitBtn.disabled = loading;
-    submitLabel.textContent = loading ? 'Iniciando sesión...' : 'Iniciar Sesión';
-    submitSpinner.classList.toggle('hidden', !loading);
-  }
-
-  async function promptForcePasswordChange() {
-    var nueva = prompt('Ingresa tu nueva contraseña (mín. 6 chars):');
-    if (!nueva || nueva.length < 6) {
-      showToast('Debes ingresar una contraseña válida para continuar', 'warning', 4000);
+    if (!result || result.success !== true) {
+      showToast(result?.error || MSG.AUTH.CONNECTION_ERROR, 'error');
       return;
     }
 
-    try {
-      if (!window.apiClient || typeof window.apiClient.post !== 'function') {
-        throw new Error('Cliente API no disponible');
-      }
+    const data = result.data || {};
+    if (!data.token) throw new Error(MSG.AUTH.TOKEN_MISSING);
 
-      await window.apiClient.post('/usuarios/cambiar-password', { password: nueva });
-      localStorage.removeItem('debe_cambiar_password');
-      window.location.href = getDashboardHref();
-    } catch (err) {
-      showToast((err && err.message) || 'No se pudo cambiar la contraseña', 'error');
+    localStorage.setItem('as_token',      data.token);
+    localStorage.setItem('as_expires_at', data.expires_at);
+    localStorage.setItem('as_role',       data.role);
+    localStorage.setItem('as_nombre',     data.nombre);
+    if (data.user_id) localStorage.setItem('as_user_id', data.user_id);
+
+    if (rememberChk?.checked) {
+      localStorage.setItem('as_remember_identifier', identifier);
+    } else {
+      localStorage.removeItem('as_remember_identifier');
     }
+
+    if (data.debe_cambiar_password === true) {
+      localStorage.setItem('debe_cambiar_password', '1');
+      showToast(MSG.PASSWORD.FORCE_CHANGE_REQUIRED, 'warning', 4000);
+      setTimeout(promptForcePasswordChange, 250);
+      return;
+    }
+
+    showToast(MSG.AUTH.WELCOME(data.nombre), 'success');
+    window.location.href = getDashboardHref();
+  } catch (err) {
+    if (err?.status === 401) {
+      showToast(MSG.AUTH.CREDENTIALS_INVALID, 'error');
+      if (passInput) passInput.value = '';
+      return;
+    }
+    if (err?.status === 403) {
+      showToast(MSG.AUTH.ACCOUNT_LOCKED, 'error');
+      if (passInput) passInput.value = '';
+      return;
+    }
+    showToast(err?.message || MSG.AUTH.CONNECTION_ERROR, 'error');
+  } finally {
+    setLoading(false);
+  }
+});
+
+// ── Cambio forzado de contraseña ──────────────────────────────────────────
+
+async function promptForcePasswordChange() {
+  const nueva = prompt('Ingresa tu nueva contraseña (mín. 6 chars):');
+  if (!nueva || nueva.length < 6) {
+    showToast(MSG.PASSWORD.FORCE_CHANGE_INVALID, 'warning', 4000);
+    return;
   }
 
-})();
+  try {
+    await apiClient.post('/usuarios/cambiar-password', { password: nueva });
+    localStorage.removeItem('debe_cambiar_password');
+    window.location.href = getDashboardHref();
+  } catch (err) {
+    showToast(err?.message || MSG.PASSWORD.CHANGE_FAILED, 'error');
+  }
+}

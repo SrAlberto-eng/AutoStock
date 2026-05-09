@@ -1,170 +1,82 @@
-class ProductService {
-  getAll(filters = {}) {
-    return window.apiClient.get('/productos', { params: filters });
-  }
+import { apiClient } from './api-client.js';
 
-  getById(id) {
-    return window.apiClient.get('/productos/' + id);
-  }
-
-  create(data) {
-    return window.apiClient.post('/productos', data);
-  }
-
-  createBulk(items) {
-    return window.apiClient.post('/productos/bulk', { items: items });
-  }
-
-  update(id, data) {
-    return window.apiClient.patch('/productos/' + id, data);
-  }
-
-  softDelete(id) {
-    return window.apiClient.delete('/productos/' + id);
-  }
-
-  toggle(id) {
-    return window.apiClient.post('/productos/' + id + '/toggle');
-  }
-
-  checkName(name) {
-    return window.apiClient.get('/productos/check_name', { params: { name: name } });
-  }
+class _ProductService {
+  getAll(filters = {})    { return apiClient.get('/productos', { params: filters }); }
+  getById(id)             { return apiClient.get('/productos/' + id); }
+  create(data)            { return apiClient.post('/productos', data); }
+  createBulk(items)       { return apiClient.post('/productos/bulk', { items }); }
+  update(id, data)        { return apiClient.patch('/productos/' + id, data); }
+  softDelete(id)          { return apiClient.delete('/productos/' + id); }
+  toggle(id)              { return apiClient.post('/productos/' + id + '/toggle'); }
+  checkName(name)         { return apiClient.get('/productos/check_name', { params: { name } }); }
 }
 
-class CatalogService {
-  getAll(tipo) {
-    return window.apiClient.get('/catalogos/' + tipo);
-  }
+class _CatalogService {
+  getAll(tipo) { return apiClient.get('/catalogos/' + tipo); }
 
   getAllCatalogs() {
     return Promise.all([
       this.getAll('categorias'),
       this.getAll('areas'),
-      this.getAll('unidades')
-    ]).then(function (results) {
-      return {
-        categorias: (results[0] && results[0].data && results[0].data.items) ? results[0].data.items : [],
-        areas: (results[1] && results[1].data && results[1].data.items) ? results[1].data.items : [],
-        unidades: (results[2] && results[2].data && results[2].data.items) ? results[2].data.items : []
-      };
-    });
+      this.getAll('unidades'),
+    ]).then(([r0, r1, r2]) => ({
+      categorias: r0?.data?.items || [],
+      areas:      r1?.data?.items || [],
+      unidades:   r2?.data?.items || [],
+    }));
   }
 
-  create(tipo, data) {
-    return window.apiClient.post('/catalogos/' + tipo, data);
-  }
-
-  update(tipo, id, data) {
-    return window.apiClient.patch('/catalogos/' + tipo + '/' + id, data);
-  }
-
-  remove(tipo, id) {
-    return window.apiClient.delete('/catalogos/' + tipo + '/' + id);
-  }
+  create(tipo, data)        { return apiClient.post('/catalogos/' + tipo, data); }
+  update(tipo, id, data)    { return apiClient.patch('/catalogos/' + tipo + '/' + id, data); }
+  remove(tipo, id)          { return apiClient.delete('/catalogos/' + tipo + '/' + id); }
 }
 
-class MovementService {
+class _MovementService {
   create(tipo, items, extra = {}) {
-    return window.apiClient.post('/movimientos', {
-      tipo: tipo,
-      items: items,
-      ...extra
-    });
+    return apiClient.post('/movimientos', { tipo, items, ...extra });
   }
-
-  getAll(filters = {}) {
-    return window.apiClient.get('/movimientos', { params: filters });
-  }
-
-  revert(id) {
-    return window.apiClient.post('/movimientos/' + id + '/revertir');
-  }
-
-  getDashboardSummary() {
-    return window.apiClient.get('/dashboard/resumen');
-  }
-
-  previewImport(xmlBase64) {
-    return window.apiClient.post('/importacion/preview', {
-      xml_base64: xmlBase64
-    });
-  }
+  getAll(filters = {})    { return apiClient.get('/movimientos', { params: filters }); }
+  revert(id)              { return apiClient.post('/movimientos/' + id + '/revertir'); }
+  getDashboardSummary()   { return apiClient.get('/dashboard/resumen'); }
+  previewImport(xmlBase64){ return apiClient.post('/importacion/preview', { xml_base64: xmlBase64 }); }
 }
 
-class UserService {
-  getAll() {
-    return window.apiClient.get('/usuarios');
-  }
-
-  create(data) {
-    return window.apiClient.post('/usuarios', data);
-  }
-
-  update(id, data) {
-    return window.apiClient.patch('/usuarios/' + id, data);
-  }
-
-  resetPassword(id) {
-    return window.apiClient.post('/usuarios/' + id + '/password');
-  }
-
-  softDelete(id) {
-    return window.apiClient.delete('/usuarios/' + id);
-  }
-
-  unblock(id) {
-    return window.apiClient.post('/usuarios/' + id + '/unblock');
-  }
-
-  toggle(id) {
-    return window.apiClient.post('/usuarios/' + id + '/toggle');
-  }
-
-  getAllIncludeInactive() {
-    return window.apiClient.get('/usuarios', { params: { include_inactive: true } });
-  }
+class _UserService {
+  getAll()                 { return apiClient.get('/usuarios'); }
+  create(data)             { return apiClient.post('/usuarios', data); }
+  update(id, data)         { return apiClient.patch('/usuarios/' + id, data); }
+  resetPassword(id)        { return apiClient.post('/usuarios/' + id + '/password'); }
+  softDelete(id)           { return apiClient.delete('/usuarios/' + id); }
+  unblock(id)              { return apiClient.post('/usuarios/' + id + '/unblock'); }
+  toggle(id)               { return apiClient.post('/usuarios/' + id + '/toggle'); }
+  getAllIncludeInactive()  { return apiClient.get('/usuarios', { params: { include_inactive: true } }); }
 }
 
-class ProviderService {
+class _ProviderService {
   getAll(includeInactive = false) {
-    var params = includeInactive ? { include_inactive: true } : {};
-    return window.apiClient.get('/proveedores', { params: params });
+    const params = includeInactive ? { include_inactive: true } : {};
+    return apiClient.get('/proveedores', { params });
   }
-
-  create(data) {
-    return window.apiClient.post('/proveedores', data);
-  }
-
-  update(id, data) {
-    return window.apiClient.patch('/proveedores/' + id, data);
-  }
-
-  toggle(id) {
-    return window.apiClient.post('/proveedores/' + id + '/toggle');
-  }
+  create(data)             { return apiClient.post('/proveedores', data); }
+  update(id, data)         { return apiClient.patch('/proveedores/' + id, data); }
+  toggle(id)               { return apiClient.post('/proveedores/' + id + '/toggle'); }
 }
 
-class PurchaseService {
-  getAll() {
-    return window.apiClient.get('/compras');
-  }
-
-  export() {
-    return window.apiClient.get('/compras/export');
-  }
+class _PurchaseService {
+  getAll()  { return apiClient.get('/compras'); }
+  export()  { return apiClient.get('/compras/export'); }
 }
 
-class ReportService {
+class _ReportService {
   getMovimientosReport(filters = {}) {
-    return window.apiClient.get('/reportes/movimientos', { params: filters });
+    return apiClient.get('/reportes/movimientos', { params: filters });
   }
 }
 
-window.ProductService = new ProductService();
-window.CatalogService = new CatalogService();
-window.MovementService = new MovementService();
-window.UserService = new UserService();
-window.ProviderService = new ProviderService();
-window.PurchaseService = new PurchaseService();
-window.ReportService = new ReportService();
+export const ProductService  = new _ProductService();
+export const CatalogService  = new _CatalogService();
+export const MovementService = new _MovementService();
+export const UserService     = new _UserService();
+export const ProviderService = new _ProviderService();
+export const PurchaseService = new _PurchaseService();
+export const ReportService   = new _ReportService();

@@ -23,7 +23,7 @@
  * Lee un File, valida la extensión y lo parsea con DOMParser.
  * @returns {Promise<{doc: Document|null, error: string|null}>}
  */
-async function readXmlFile(file) {
+export async function readXmlFile(file) {
   if (!file.name.toLowerCase().endsWith('.xml')) {
     return { doc: null, error: 'Selecciona un archivo .xml válido' };
   }
@@ -49,7 +49,7 @@ async function readXmlFile(file) {
  * @param {...string} names  – nombres de atributo / etiqueta a probar
  * @returns {string}
  */
-function xmlAttrOrChild(node, ...names) {
+export function xmlAttrOrChild(node, ...names) {
   if (!node) return '';
   for (const name of names) {
     const attr = node.getAttribute(name);
@@ -68,7 +68,7 @@ function xmlAttrOrChild(node, ...names) {
  *
  * @param {{ dropzoneId: string, inputId: string, btnId: string, fileNameId?: string, onFile: Function }} options
  */
-function initXmlDropzone({ dropzoneId, inputId, btnId, fileNameId, onFile }) {
+export function initXmlDropzone({ dropzoneId, inputId, btnId, fileNameId, onFile }) {
   const dropzone = document.getElementById(dropzoneId);
   const input    = document.getElementById(inputId);
   const btn      = document.getElementById(btnId);

@@ -65,9 +65,9 @@
           <div id="profile-dropdown" class="dropdown-menu profile-menu hidden" role="menu">
             <div class="profile-menu-header"><div class="avatar avatar-lg"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div><div class="font-medium text-sm"><!-- Admin Usuario --></div><div class="text-xs text-muted"><!-- admin@empresa.com --></div></div></div>
             <hr class="separator">
-            <button class="dropdown-item" role="menuitem" onclick="modalManager.open('modal-profile')">Mi Perfil</button>
+            <button class="dropdown-item" role="menuitem" data-modal-open="modal-profile">Mi Perfil</button>
             <hr class="separator">
-            <button class="dropdown-item dropdown-item-danger" role="menuitem" onclick="window.location.href='login.html'">Cerrar Sesión</button>
+            <button class="dropdown-item dropdown-item-danger" role="menuitem">Cerrar Sesión</button>
           </div>
         </div>
       </div>
@@ -81,7 +81,7 @@
         <!-- Row 1: Header + Action -->
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
           <h2 class="card-title" style="margin:0; font-size:0.9rem; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.05em;"></h2>
-          <button class="btn btn-primary" onclick="modalManager.open('modal-add-product')" aria-label="Agregar producto">
+          <button class="btn btn-primary" data-modal-open="modal-add-product" aria-label="Agregar producto">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Agregar producto
           </button>
@@ -191,7 +191,7 @@
       </div>
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
-      <button type="button" id="btn-toggle-product" class="btn btn-outline" style="color:#FF6B6B; border-color:#FF6B6B;" onclick="toggleProductFromDetail()">Desactivar</button>
+      <button type="button" id="btn-toggle-product" class="btn btn-outline-danger">Desactivar</button>
       <button type="button" class="btn btn-outline" data-modal-close="modal-product-detail">Cerrar</button>
     </div>
   </div>
@@ -225,7 +225,7 @@
       <div id="ap-section-new">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-top:16px; margin-bottom:4px;">
           <span class="text-xs" style="font-weight:600; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.05em;">Nuevos productos</span>
-          <button type="button" id="ap-collapse-new" class="btn btn-ghost btn-sm" style="display:none; align-items:center; gap:4px; font-size:0.8rem;" onclick="toggleApSection('new')" aria-expanded="true">
+          <button type="button" id="ap-collapse-new" class="btn btn-ghost btn-sm" style="display:none; align-items:center; gap:4px; font-size:0.8rem;" aria-expanded="true">
             <svg id="ap-collapse-new-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
             <span id="ap-collapse-new-label">Ocultar</span>
           </button>
@@ -241,7 +241,7 @@
               <tbody id="add-product-rows"></tbody>
             </table>
           </div>
-          <button type="button" class="btn btn-ghost" style="margin-top:12px;" onclick="addProductRow()">
+          <button type="button" id="btn-add-product-row" class="btn btn-ghost" style="margin-top:12px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Agregar fila
           </button>
@@ -255,7 +255,7 @@
             <span class="text-xs" style="font-weight:600; color:var(--color-text-muted); text-transform:uppercase; letter-spacing:0.05em;">Productos existentes</span>
             <span class="badge badge-warning" style="font-size:0.7rem; text-transform:none; letter-spacing:0;">Ya registrados</span>
           </span>
-          <button type="button" id="ap-collapse-existing" class="btn btn-ghost btn-sm" style="display:flex; align-items:center; gap:4px; font-size:0.8rem;" onclick="toggleApSection('existing')" aria-expanded="true">
+          <button type="button" id="ap-collapse-existing" class="btn btn-ghost btn-sm" style="display:flex; align-items:center; gap:4px; font-size:0.8rem;" aria-expanded="true">
             <svg id="ap-collapse-existing-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transition:transform 0.2s;" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
             <span id="ap-collapse-existing-label">Ocultar</span>
           </button>
@@ -280,7 +280,7 @@
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-outline" data-modal-close="modal-add-product">Cancelar</button>
-      <button type="button" class="btn btn-primary" onclick="saveNewProducts()">Guardar productos</button>
+      <button type="button" id="btn-save-products" class="btn btn-primary">Guardar productos</button>
     </div>
   </div>
 </div>
@@ -294,7 +294,7 @@
     <div class="modal-body">
       <p class="text-sm" style="color:var(--color-text-muted); margin-bottom:16px;">El proveedor de la factura no está registrado. Agrégalo para que quede asociado a los productos importados.</p>
       <div class="field">
-        <label class="field-label" for="xml-proveedor-nombre">Nombre <span style="color:#FF6B6B;">*</span></label>
+        <label class="field-label" for="xml-proveedor-nombre">Nombre <span class="required-mark">*</span></label>
         <input id="xml-proveedor-nombre" class="input" type="text" placeholder="Nombre del proveedor">
       </div>
       <div class="field" style="margin-top:10px;">
@@ -307,10 +307,10 @@
       </div>
     </div>
     <div class="modal-footer" style="justify-content:space-between;">
-      <button type="button" class="btn btn-ghost" onclick="skipXmlSupplier()">Omitir</button>
+      <button type="button" id="btn-skip-xml-supplier" class="btn btn-ghost">Omitir</button>
       <div style="display:flex;gap:8px;">
         <button type="button" class="btn btn-outline" data-modal-close="modal-xml-proveedor">Cancelar</button>
-        <button type="button" class="btn btn-primary" onclick="saveXmlSupplier()">Agregar proveedor</button>
+        <button type="button" id="btn-save-xml-supplier" class="btn btn-primary">Agregar proveedor</button>
       </div>
     </div>
   </div>
@@ -341,19 +341,19 @@
               <td><input type="number" name="quantity" min="1" class="input" placeholder="0" aria-label="Cantidad"></td>
               <td><span class="text-sm text-muted" id="entry-unit-1">—</span></td>
               <td><select name="supplier" class="select-native" aria-label="Seleccionar proveedor"><option value="">Proveedor...</option></select></td>
-              <td><button type="button" class="btn btn-ghost btn-icon" onclick="removeEntryRow(1)" aria-label="Eliminar fila"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+              <td><button type="button" class="btn btn-ghost btn-icon" data-action="remove" aria-label="Eliminar fila"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
             </tr>
           </tbody>
         </table>
       </div>
-      <button type="button" class="btn btn-ghost" style="margin-top:12px;" onclick="addEntryRow()">
+      <button type="button" class="btn btn-ghost" id="btn-add-entry-row" style="margin-top:12px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Agregar fila
       </button>
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-outline" data-modal-close="modal-entry">Cancelar</button>
-      <button type="button" class="btn btn-primary" onclick="confirmEntry()">Confirmar Entrada</button>
+      <button type="button" class="btn btn-primary" id="btn-confirm-entry">Confirmar Entrada</button>
     </div>
   </div>
 </div>
@@ -383,19 +383,19 @@
               <td><input type="number" name="quantity" min="1" class="input" placeholder="0" aria-label="Cantidad"></td>
               <td><span class="text-sm text-muted" id="exit-stock-1">—</span></td>
               <td><select name="destination" class="select-native" aria-label="Destino"><option value="">Destino...</option></select></td>
-              <td><button type="button" class="btn btn-ghost btn-icon" onclick="removeExitRow(1)" aria-label="Eliminar fila"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
+              <td><button type="button" class="btn btn-ghost btn-icon" data-action="remove" aria-label="Eliminar fila"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></td>
             </tr>
           </tbody>
         </table>
       </div>
-      <button type="button" class="btn btn-outline btn-sm" style="margin-top:12px;" onclick="addExitRow()">
+      <button type="button" class="btn btn-outline btn-sm" id="btn-add-exit-row" style="margin-top:12px;">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Agregar fila
       </button>
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-outline" data-modal-close="modal-exit">Cancelar</button>
-      <button type="button" class="btn btn-primary" onclick="confirmExit()">Confirmar salidas</button>
+      <button type="button" class="btn btn-primary" id="btn-confirm-exit">Confirmar salidas</button>
     </div>
   </div>
 </div>
@@ -442,26 +442,12 @@
     </div>
     <div class="modal-footer">
       <button type="button" class="btn btn-outline" data-modal-close="modal-waste">Cancelar</button>
-      <button type="button" class="btn btn-primary" onclick="confirmWaste()">Confirmar merma</button>
+      <button type="button" class="btn btn-primary" id="btn-confirm-waste">Confirmar merma</button>
     </div>
   </div>
 </div>
 
 <div id="toast-container"></div>
-<script src="../scripts/sanitizers.js"></script>
-<script src="../scripts/storage-manager.js"></script>
-<script src="../scripts/api-client.js"></script>
-<script src="../scripts/services.js"></script>
-<script src="../scripts/store.js"></script>
-<script src="../scripts/theme-switcher.js"></script>
-<script src="../scripts/layout.js"></script>
-<script src="../scripts/toast.js"></script>
-<script src="../scripts/modals.js"></script>
-<script src="../scripts/xml-importer.js"></script>
-<script src="../scripts/filter-engine.js"></script>
-<script src="../scripts/filter-chips.js"></script>
-<script src="../scripts/select-ui.js"></script>
-<script src="../scripts/movements.js"></script>
-<script src="../scripts/inventario.js"></script>
+<script type="module" src="../scripts/inventario.js"></script>
 </body>
 </html>

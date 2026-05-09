@@ -9,11 +9,11 @@
  *              Maneja: Escape para cerrar, click en backdrop, tabs dentro de modales.
  */
 
-(function () {
-  'use strict';
+/* Stack de modales abiertos */
+var openStack = [];
 
-  /* Stack de modales abiertos */
-  var openStack = [];
+/* Registry de callbacks de inicialización por modal ID */
+var _initCallbacks = new Map();
 
   /* ════════════════════════════════════════════════════════
      OPEN
@@ -41,11 +41,9 @@
     // Init tabs inside this modal
     initTabsInModal(backdrop);
 
-    // Call per-modal init function if it exists
-    var initFnName = 'init' + toPascalCase(modalId);
-    if (typeof window[initFnName] === 'function') {
-      window[initFnName](backdrop);
-    }
+    // Call registered init callback if any
+    var initCb = _initCallbacks.get(modalId);
+    if (initCb) initCb(backdrop);
   }
 
   /* ════════════════════════════════════════════════════════
@@ -162,24 +160,17 @@
     }
   });
 
-  /* ════════════════════════════════════════════════════════
-     HELPERS
-     ════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════
+   HELPERS
+   ════════════════════════════════════════════════════════ */
 
-  function toPascalCase(str) {
-    return str.replace(/(^|[-_])([a-z])/g, function (_, __, c) {
-      return c.toUpperCase();
-    });
-  }
+/* ════════════════════════════════════════════════════════
+   PUBLIC API
+   ════════════════════════════════════════════════════════ */
 
-  /* ════════════════════════════════════════════════════════
-     PUBLIC API
-     ════════════════════════════════════════════════════════ */
-
-  window.modalManager = {
-    open: open,
-    close: close,
-    closeAll: closeAll
-  };
-
-})();
+export const modalManager = {
+  open: open,
+  close: close,
+  closeAll: closeAll,
+  registerInit: function (modalId, fn) { _initCallbacks.set(modalId, fn); },
+};
