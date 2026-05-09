@@ -10,7 +10,7 @@ import { showToast }    from './toast.js';
 import { store }        from './store.js';
 import { storageManager } from './storage-manager.js';
 import { escapeHtml }   from './sanitizers.js';
-import { MovementService, ProductService, CatalogService } from './services.js';
+import { MovementService, ProductService } from './services.js';
 import { readXmlFile, xmlAttrOrChild, initXmlDropzone } from './xml-importer.js';
 import { initActiveNav } from './layout.js';
 import { modalManager } from './modals.js';
@@ -206,12 +206,16 @@ async function handleXmlPreview(productosParseados, xmlBase64) {
   if (!xmlBase64 || !productosParseados || !productosParseados.length) return;
 
   try {
-    const [productsRes, catalogsRes] = await Promise.all([
-      ProductService.getAll({ limit: 200 }).catch(() => null),
-      CatalogService.getAllCatalogs().catch(() => null),
-    ]);
+    let products = store.getState().products || [];
 
-    const products = (productsRes?.data?.items || []);
+    if (!products.length) {
+      const productsRes = await ProductService.getAll({ limit: 200 }).catch(() => null);
+      products = productsRes?.data?.items || [];
+      if (products.length) {
+        store.setState({ products });
+      }
+    }
+
     if (!products.length) {
       showToast(MSG.DASHBOARD.XML_SUGGESTIONS_UNAVAILABLE, 'info');
       return;
