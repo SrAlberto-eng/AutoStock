@@ -6,6 +6,12 @@
 import { MSG }                           from './constants/messages.js';
 import { formatDateTime, toDateOnly }    from './utils.js';
 import { tipoBadge }                     from './ui-helpers.js';
+import { showToast }                     from './toast.js';
+import { escapeHtml }                    from './sanitizers.js';
+import { storageManager }                from './storage-manager.js';
+import { initFilterChips }               from './filter-chips.js';
+import { ReportService }                 from './services.js';
+import { initActiveNav } from './layout.js';
 
 const REPORTES_VIEW_NAME = 'reportes';
 
@@ -18,9 +24,9 @@ let reportItemsVisible = [];
 // ── Persistencia de filtros ───────────────────────────────────────────────
 
 function saveUIState() {
-  if (typeof window.storageManager?.saveUIState !== 'function') return;
+  if (typeof storageManager?.saveUIState !== 'function') return;
   const selectedTypes = getSelectedTypes();
-  window.storageManager.saveUIState(REPORTES_VIEW_NAME, {
+  storageManager.saveUIState(REPORTES_VIEW_NAME, {
     tipos:        selectedTypes.join(','),
     fecha_desde:  document.getElementById('date-from')?.value || '',
     fecha_hasta:  document.getElementById('date-to')?.value   || '',
@@ -28,8 +34,8 @@ function saveUIState() {
 }
 
 function restoreUIState() {
-  if (typeof window.storageManager?.loadUIState !== 'function') return null;
-  const saved = window.storageManager.loadUIState(REPORTES_VIEW_NAME);
+  if (typeof storageManager?.loadUIState !== 'function') return null;
+  const saved = storageManager.loadUIState(REPORTES_VIEW_NAME);
   if (!saved) return null;
   const dateFrom = document.getElementById('date-from');
   const dateTo   = document.getElementById('date-to');
@@ -87,7 +93,7 @@ async function reloadWithActiveFilters() {
 
 async function loadReportes(filters = {}) {
   try {
-    const res = await window.ReportService.getMovimientosReport(filters);
+    const res = await ReportService.getMovimientosReport(filters);
     reportItems = res.data?.items || [];
     applyLocalFilters();
   } catch (err) {
@@ -143,11 +149,11 @@ function renderTablaReportes(items) {
                 data-date="${toDateOnly(item.fecha_sistema)}">
       <td class="text-left">${formatDateTime(item.fecha_sistema)}</td>
       <td class="text-left">${tipoBadge(item.tipo)}</td>
-      <td class="text-left">${window.escapeHtml(item.producto_nombre || 'Sin producto')}</td>
+      <td class="text-left">${escapeHtml(item.producto_nombre || 'Sin producto')}</td>
       <td class="td-num">${signedQty}</td>
-      <td class="text-center">${window.escapeHtml(item.usuario_nombre || 'Sistema')}</td>
+      <td class="text-center">${escapeHtml(item.usuario_nombre || 'Sistema')}</td>
       <td class="text-center">${revertidoTxt}</td>
-      <td>${window.escapeHtml(item.motivo || '—')}</td>
+      <td>${escapeHtml(item.motivo || '—')}</td>
     </tr>`;
   }).join('');
 

@@ -3,8 +3,14 @@
  * Lista de compras en tiempo real: ajuste de cantidades en memoria,
  * eliminación de filas, totales, exportación PDF e impresión.
  */
-import { MSG }     from './constants/messages.js';
-import { slugify } from './utils.js';
+import { MSG }                              from './constants/messages.js';
+import { slugify }                          from './utils.js';
+import { showToast }                        from './toast.js';
+import { storageManager }                   from './storage-manager.js';
+import { FilterEngine }                     from './filter-engine.js';
+import { escapeHtml }                       from './sanitizers.js';
+import { PurchaseService, CatalogService, ProviderService } from './services.js';
+import { initActiveNav } from './layout.js';
 
 const COMPRAS_VIEW_NAME = 'compras';
 
@@ -15,16 +21,16 @@ let comprasFilterEngine = null;
 // ── Persistencia de filtros ───────────────────────────────────────────────
 
 function saveUIState() {
-  if (typeof window.storageManager?.saveUIState !== 'function') return;
-  window.storageManager.saveUIState(COMPRAS_VIEW_NAME, {
+  if (typeof storageManager?.saveUIState !== 'function') return;
+  storageManager.saveUIState(COMPRAS_VIEW_NAME, {
     categoria: document.getElementById('filter-category')?.value || '',
     proveedor: document.getElementById('filter-provider')?.value  || '',
   });
 }
 
 function restoreUIState() {
-  if (typeof window.storageManager?.loadUIState !== 'function') return;
-  const saved = window.storageManager.loadUIState(COMPRAS_VIEW_NAME);
+  if (typeof storageManager?.loadUIState !== 'function') return;
+  const saved = storageManager.loadUIState(COMPRAS_VIEW_NAME);
   if (!saved) return;
   const categoryFilter = document.getElementById('filter-category');
   const providerFilter  = document.getElementById('filter-provider');
@@ -37,7 +43,7 @@ function restoreUIState() {
 /** Carga la lista de compras del backend y repinta la tabla. */
 async function loadCompras() {
   try {
-    const res = await window.PurchaseService.getAll();
+    const res = await PurchaseService.getAll();
     comprasItems = res.data?.items || [];
     await populateFilterOptions(comprasItems);
     renderTablaCompras(comprasItems);
@@ -57,7 +63,7 @@ async function populateFilterOptions(items) {
     const categories = await fetchCategoryNames(items);
     categoryFilter.innerHTML = '<option value="">Todas las categorías</option>'
       + categories.sort().map(c =>
-          `<option value="${slugify(c)}">${window.escapeHtml(c)}</option>`
+          `<option value="${slugify(c)}">${escapeHtml(c)}</option>`
         ).join('');
     categoryFilter.value = selected;
   }
@@ -67,7 +73,7 @@ async function populateFilterOptions(items) {
     const providers = await fetchProviderNames(items);
     providerFilter.innerHTML = '<option value="">Todos los proveedores</option>'
       + providers.sort().map(p =>
-          `<option value="${slugify(p)}">${window.escapeHtml(p)}</option>`
+          `<option value="${slugify(p)}">${escapeHtml(p)}</option>`
         ).join('');
     providerFilter.value = selected;
   }
@@ -76,7 +82,7 @@ async function populateFilterOptions(items) {
 /** Obtiene nombres de categorías desde el catálogo; usa los ítems como fallback. */
 async function fetchCategoryNames(items) {
   try {
-    const cats = await window.CatalogService.getAllCatalogs();
+    const cats = await CatalogService.getAllCatalogs();
     if (Array.isArray(cats?.categorias) && cats.categorias.length) {
       return cats.categorias.map(c => c.nombre);
     }
@@ -87,7 +93,7 @@ async function fetchCategoryNames(items) {
 /** Obtiene nombres de proveedores; usa los ítems como fallback. */
 async function fetchProviderNames(items) {
   try {
-    const res = await window.ProviderService.getAll();
+    const res = await ProviderService.getAll();
     if (Array.isArray(res?.data?.items) && res.data.items.length) {
       return res.data.items.map(p => p.nombre);
     }
@@ -139,12 +145,12 @@ function renderTablaCompras(items) {
       <tr data-product-id="${item.producto_id}"
           data-category="${slugify(category)}"
           data-provider="${slugify(provider)}">
-        <td>${window.escapeHtml(item.nombre_producto)}</td>
-        <td>${window.escapeHtml(category)}</td>
-        <td>${window.escapeHtml(area)}</td>
-        <td class="td-num ${cellClass}">${window.escapeHtml(String(stockLabel))}</td>
-        <td class="td-num">${window.escapeHtml(String(stockMin))}</td>
-        <td>${window.escapeHtml(unit)}</td>
+        <td>${escapeHtml(item.nombre_producto)}</td>
+        <td>${escapeHtml(category)}</td>
+        <td>${escapeHtml(area)}</td>
+        <td class="td-num ${cellClass}">${escapeHtml(String(stockLabel))}</td>
+        <td class="td-num">${escapeHtml(String(stockMin))}</td>
+        <td>${escapeHtml(unit)}</td>
         <td>
           <input type="number" min="1" value="${qty}"
             class="input compras-qty-input" style="width:90px;"
@@ -285,13 +291,13 @@ function buildPrintMarkup(items, fechaIso, usuario) {
   const rows = items.map(item => {
     const qty = getDisplayQty(item);
     return `<tr>
-      <td>${window.escapeHtml(item.nombre_producto)}</td>
-      <td>${window.escapeHtml(item.categoria_nombre || 'Sin categoría')}</td>
-      <td>${window.escapeHtml(item.area_nombre      || 'Sin área')}</td>
-      <td>${window.escapeHtml(item.unidad_nombre    || 'N/A')}</td>
-      <td style="text-align:right;">${window.escapeHtml(item.stock_actual ?? 0)}</td>
-      <td style="text-align:right;">${window.escapeHtml(item.stock_min   ?? 0)}</td>
-      <td style="text-align:right;">${window.escapeHtml(qty)}</td>
+      <td>${escapeHtml(item.nombre_producto)}</td>
+      <td>${escapeHtml(item.categoria_nombre || 'Sin categoría')}</td>
+      <td>${escapeHtml(item.area_nombre      || 'Sin área')}</td>
+      <td>${escapeHtml(item.unidad_nombre    || 'N/A')}</td>
+      <td style="text-align:right;">${escapeHtml(item.stock_actual ?? 0)}</td>
+      <td style="text-align:right;">${escapeHtml(item.stock_min   ?? 0)}</td>
+      <td style="text-align:right;">${escapeHtml(qty)}</td>
     </tr>`;
   }).join('');
 
@@ -306,7 +312,7 @@ function buildPrintMarkup(items, fechaIso, usuario) {
     th { background:#f3f4f6; text-align:left; }
   </style></head><body>
     <h1>Lista de Compras</h1>
-    <div class="meta">Fecha: ${window.escapeHtml(fecha)}<br>Usuario: ${window.escapeHtml(usuario)}</div>
+    <div class="meta">Fecha: ${escapeHtml(fecha)}<br>Usuario: ${escapeHtml(usuario)}</div>
     <table>
       <thead><tr>
         <th>Producto</th><th>Categoría</th><th>Área</th><th>Unidad</th>

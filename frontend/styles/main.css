@@ -1545,9 +1545,10 @@ hr, .separator {
   flex-shrink: 0;
 }
 
-.movement-dot--entrada { background-color: var(--status-success); }
-.movement-dot--salida  { background-color: var(--accent-primary); }
-.movement-dot--merma   { background-color: var(--status-danger); }
+.movement-dot--entrada  { background-color: var(--status-success); }
+.movement-dot--salida   { background-color: var(--accent-primary); }
+.movement-dot--merma    { background-color: var(--status-danger); }
+.movement-dot--warning  { background-color: var(--status-warning); }
 
 /* Status filter chips */
 .filter-chip {

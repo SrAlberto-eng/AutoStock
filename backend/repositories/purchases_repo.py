@@ -29,7 +29,7 @@ def get_purchase_list(conn) -> list[dict]:
             LEFT JOIN unidades_medida um ON um.id = p.unidad_id
             LEFT JOIN proveedores pr ON pr.id = p.proveedor_id
             WHERE p.activo = 1
-              AND p.stock_actual < p.stock_min
+              AND (p.stock_actual < p.stock_min OR p.stock_actual = 0)
             ORDER BY (p.stock_min - p.stock_actual) DESC
             """
         )

@@ -59,7 +59,7 @@
           <div id="profile-dropdown" class="dropdown-menu profile-menu hidden" role="menu">
             <div class="profile-menu-header"><div class="avatar avatar-lg"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><div><div class="font-medium text-sm"><!-- Admin Usuario --></div><div class="text-xs text-muted"><!-- admin@empresa.com --></div></div></div>
             <hr class="separator">
-            <button class="dropdown-item" role="menuitem" onclick="modalManager.open('modal-profile')">Mi Perfil</button>
+            <button class="dropdown-item" role="menuitem" data-modal-open="modal-profile">Mi Perfil</button>
             <hr class="separator">
             <button class="dropdown-item dropdown-item-danger" role="menuitem" onclick="window.location.href='login.html'">Cerrar Sesión</button>
           </div>
@@ -100,7 +100,17 @@
 
       <!-- Table -->
       <div class="table-wrapper" id="compras-table-wrapper">
-        <table id="compras-table">
+        <table id="compras-table" style="table-layout:fixed; width:100%;">
+          <colgroup>
+            <col style="width:25%;">
+            <col style="width:13%;">
+            <col style="width:12%;">
+            <col style="width:11%;">
+            <col style="width:11%;">
+            <col style="width:10%;">
+            <col style="width:13%;">
+            <col style="width:5%;">
+          </colgroup>
           <thead>
             <tr>
               <th class="text-left">Producto</th>
@@ -110,7 +120,7 @@
               <th class="text-center">Stock mínimo</th>
               <th class="text-left">Unidad</th>
               <th class="text-left">Cantidad a comprar</th>
-              <th class="no-print" style="width:5%;"></th>
+              <th class="no-print"></th>
             </tr>
           </thead>
           <tbody id="compras-tbody"></tbody>
@@ -133,16 +143,6 @@
 </div><!-- /app-layout -->
 
 <div id="toast-container"></div>
-<script src="../scripts/sanitizers.js"></script>
-<script src="../scripts/storage-manager.js"></script>
-<script src="../scripts/api-client.js"></script>
-<script src="../scripts/services.js"></script>
-<script src="../scripts/store.js"></script>
-<script src="../scripts/theme-switcher.js"></script>
-<script src="../scripts/layout.js"></script>
-<script src="../scripts/toast.js"></script>
-<script src="../scripts/modals.js"></script>
-<script src="../scripts/filter-engine.js"></script>
 <script type="module" src="../scripts/compras.js"></script>
 </body>
 </html>

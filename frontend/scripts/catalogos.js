@@ -5,6 +5,12 @@
  */
 import { MSG }        from './constants/messages.js';
 import { activoBadge } from './ui-helpers.js';
+import { showToast }   from './toast.js';
+import { store }       from './store.js';
+import { escapeHtml }  from './sanitizers.js';
+import { CatalogService, ProviderService } from './services.js';
+import { initActiveNav } from './layout.js';
+import { modalManager } from './modals.js';
 
 /** Fila pendiente de eliminación mientras se muestra el AlertDialog. */
 let pendingDeleteRow = null;
@@ -72,11 +78,11 @@ function renderTabla(tipo, items) {
     : [];
 
   tbody.innerHTML = safeItems.map(item => {
-    const id           = window.escapeHtml(String(readItemId(item)));
-    const nombre       = window.escapeHtml(item.nombre || '');
-    const descripcion  = window.escapeHtml(item.descripcion  || '');
-    const abreviatura  = window.escapeHtml(item.abreviatura || item.abreviacion || '');
-    const productos    = window.escapeHtml(String(item.productos_asociados || item.productos_count || 0));
+    const id           = escapeHtml(String(readItemId(item)));
+    const nombre       = escapeHtml(item.nombre || '');
+    const descripcion  = escapeHtml(item.descripcion  || '');
+    const abreviatura  = escapeHtml(item.abreviatura || item.abreviacion || '');
+    const productos    = escapeHtml(String(item.productos_asociados || item.productos_count || 0));
 
     const rowAttrs = `data-id="${id}" data-tipo="${modalType}" data-item-id="${id}"
       data-type="${modalType}" data-name="${nombre}" data-description="${descripcion}"
@@ -97,7 +103,7 @@ function renderTabla(tipo, items) {
 async function loadCatalogos() {
   try {
     store.setState({ ui: { loading: true } });
-    const data = await window.CatalogService.getAllCatalogs();
+    const data = await CatalogService.getAllCatalogs();
     store.setState({ catalogs: data, ui: { loading: false } });
     renderTabla('categorias', data.categorias);
     renderTabla('areas',      data.areas);
@@ -174,10 +180,10 @@ async function saveCatalogItem() {
 
   try {
     store.setState({ ui: { loading: true } });
-    id ? await window.CatalogService.update(apiType, id, payload)
-       : await window.CatalogService.create(apiType, payload);
+    id ? await CatalogService.update(apiType, id, payload)
+       : await CatalogService.create(apiType, payload);
 
-    const updated = await window.CatalogService.getAllCatalogs();
+    const updated = await CatalogService.getAllCatalogs();
     store.setState({ catalogs: updated });
     renderTabla('categorias', updated.categorias);
     renderTabla('areas',      updated.areas);
@@ -213,13 +219,13 @@ async function executeDelete() {
 
   try {
     store.setState({ ui: { loading: true } });
-    await window.CatalogService.remove(apiType, id);
+    await CatalogService.remove(apiType, id);
 
     row.style.transition = 'opacity 200ms ease';
     row.style.opacity    = '0';
     setTimeout(() => row.remove(), 200);
 
-    const updated = await window.CatalogService.getAllCatalogs();
+    const updated = await CatalogService.getAllCatalogs();
     store.setState({ catalogs: updated });
     renderTabla('categorias', updated.categorias);
     renderTabla('areas',      updated.areas);
@@ -243,7 +249,7 @@ async function loadProveedores() {
   try {
     store.setState({ ui: { loading: true } });
     const includeInactive = document.getElementById('chk-show-inactive-proveedores')?.checked || false;
-    const res   = await window.ProviderService.getAll(includeInactive);
+    const res   = await ProviderService.getAll(includeInactive);
     proveedoresData = res?.data?.items || [];
     renderProveedores(proveedoresData);
   } catch (err) {
@@ -270,12 +276,12 @@ function renderProveedores(items) {
   }
 
   tbody.innerHTML = safeItems.map(item => {
-    const id       = window.escapeHtml(String(item.id || ''));
-    const nombre   = window.escapeHtml(item.nombre   || '');
-    const email    = window.escapeHtml(item.email    || '');
-    const telefono = window.escapeHtml(item.telefono || '');
+    const id       = escapeHtml(String(item.id || ''));
+    const nombre   = escapeHtml(item.nombre   || '');
+    const email    = escapeHtml(item.email    || '');
+    const telefono = escapeHtml(item.telefono || '');
     const activo   = item.activo !== false && item.activo !== 0;
-    const productos = window.escapeHtml(String(item.productos_asociados || 0));
+    const productos = escapeHtml(String(item.productos_asociados || 0));
     const rowStyle = activo ? '' : ' style="opacity:0.55;"';
 
     return `<tr data-id="${id}" data-nombre="${nombre}"${rowStyle}>
@@ -333,10 +339,10 @@ async function saveProveedor() {
   try {
     store.setState({ ui: { loading: true } });
     if (id) {
-      await window.ProviderService.update(parseInt(id, 10), payload);
+      await ProviderService.update(parseInt(id, 10), payload);
       showToast(MSG.CATALOGS.PROVIDER_UPDATED, 'success');
     } else {
-      await window.ProviderService.create(payload);
+      await ProviderService.create(payload);
       showToast(MSG.CATALOGS.PROVIDER_CREATED, 'success');
     }
     modalManager.close('modal-proveedor');
@@ -356,7 +362,7 @@ function confirmToggle(id) {
 
   pendingToggleId = id;
   const activo    = item.activo !== false && item.activo !== 0;
-  const nombre    = window.escapeHtml(item.nombre || '');
+  const nombre    = escapeHtml(item.nombre || '');
   const title     = document.getElementById('dialog-toggle-title');
   const desc      = document.getElementById('dialog-toggle-desc');
 
@@ -379,7 +385,7 @@ async function executeToggle() {
 
   try {
     store.setState({ ui: { loading: true } });
-    await window.ProviderService.toggle(id);
+    await ProviderService.toggle(id);
     modalManager.close('dialog-confirm-toggle');
     showToast(MSG.CATALOGS.STATUS_UPDATED, 'success');
     await loadProveedores();

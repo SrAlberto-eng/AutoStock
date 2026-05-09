@@ -81,4 +81,4 @@ class Store {
   }
 }
 
-window.store = new Store();
+export const store = new Store();

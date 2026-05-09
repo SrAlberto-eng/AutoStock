@@ -3,8 +3,16 @@
  * Filtros de búsqueda, apertura del modal de usuario (nuevo / editar),
  * validación y guardado del formulario.
  */
-import { MSG } from './constants/messages.js';
+import { MSG }           from './constants/messages.js';
 import { slugify, badge } from './utils.js';
+import { showToast }      from './toast.js';
+import { storageManager } from './storage-manager.js';
+import { store }          from './store.js';
+import { FilterEngine }   from './filter-engine.js';
+import { escapeHtml }     from './sanitizers.js';
+import { UserService, CatalogService } from './services.js';
+import { initActiveNav } from './layout.js';
+import { modalManager } from './modals.js';
 
 let usersFilterEngine = null;
 let usuariosItems = [];
@@ -40,7 +48,7 @@ function populateRoleOptions() {
     var selectedFilter = roleFilter.value;
     roleFilter.innerHTML = '<option value="">Todos los roles</option>'
       + ROLE_OPTIONS.map(function (role) {
-        return '<option value="' + role.value + '">' + window.escapeHtml(role.label) + '</option>';
+        return '<option value="' + role.value + '">' + escapeHtml(role.label) + '</option>';
       }).join('');
     roleFilter.value = selectedFilter;
   }
@@ -49,19 +57,19 @@ function populateRoleOptions() {
     var selectedRole = roleSelect.value;
     roleSelect.innerHTML = '<option value="">Seleccionar rol...</option>'
       + ROLE_OPTIONS.map(function (role) {
-        return '<option value="' + role.value + '">' + window.escapeHtml(role.label) + '</option>';
+        return '<option value="' + role.value + '">' + escapeHtml(role.label) + '</option>';
       }).join('');
     roleSelect.value = selectedRole;
   }
 }
 
 function saveUsuariosUIState() {
-  if (!window.storageManager || typeof window.storageManager.saveUIState !== 'function') return;
+  if (typeof storageManager.saveUIState !== 'function') return;
 
   var searchInput = document.getElementById('usuarios-search');
   var roleFilter = document.getElementById('filter-role');
   var areaFilter = document.getElementById('filter-area-u');
-  window.storageManager.saveUIState(USUARIOS_VIEW_NAME, {
+  storageManager.saveUIState(USUARIOS_VIEW_NAME, {
     nombre: searchInput ? searchInput.value || '' : '',
     rol: roleFilter ? roleFilter.value || '' : '',
     area_id: areaFilter ? areaFilter.value || '' : '',
@@ -69,9 +77,9 @@ function saveUsuariosUIState() {
 }
 
 function restoreUsuariosUIState() {
-  if (!window.storageManager || typeof window.storageManager.loadUIState !== 'function') return;
+  if (typeof storageManager.loadUIState !== 'function') return;
 
-  var saved = window.storageManager.loadUIState(USUARIOS_VIEW_NAME);
+  var saved = storageManager.loadUIState(USUARIOS_VIEW_NAME);
   if (!saved) return;
 
   var searchInput = document.getElementById('usuarios-search');
@@ -176,38 +184,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 async function ensureAreasLoaded() {
-  const state = window.store.getState();
+  const state = store.getState();
   if (state.catalogs?.areas?.length) {
     return state.catalogs.areas;
   }
 
-  const catalogs = await window.CatalogService.getAllCatalogs();
-  window.store.setState({ catalogs: { areas: catalogs.areas || [] } });
+  const catalogs = await CatalogService.getAllCatalogs();
+  store.setState({ catalogs: { areas: catalogs.areas || [] } });
   return catalogs.areas || [];
 }
 
 function getAreaNameById(areaId) {
-  const areas = window.store.getState().catalogs?.areas || [];
+  const areas = store.getState().catalogs?.areas || [];
   const match = areas.find(area => String(area.id) === String(areaId));
   return match ? match.nombre : '';
 }
 
 function populateAreaSelects() {
-  const areas = window.store.getState().catalogs?.areas || [];
+  const areas = store.getState().catalogs?.areas || [];
   const modalSelect = document.getElementById('user-area');
   const filterSelect = document.getElementById('filter-area-u');
 
   if (modalSelect) {
     const selected = modalSelect.value;
     modalSelect.innerHTML = '<option value="">Seleccionar área...</option>'
-      + areas.map(area => `<option value="${area.id}">${window.escapeHtml(area.nombre)}</option>`).join('');
+      + areas.map(area => `<option value="${area.id}">${escapeHtml(area.nombre)}</option>`).join('');
     modalSelect.value = selected;
   }
 
   if (filterSelect) {
     const selected = filterSelect.value;
     filterSelect.innerHTML = '<option value="">Todas las áreas</option>'
-      + areas.map(area => `<option value="${slugify(area.nombre)}">${window.escapeHtml(area.nombre)}</option>`).join('');
+      + areas.map(area => `<option value="${slugify(area.nombre)}">${escapeHtml(area.nombre)}</option>`).join('');
     filterSelect.value = selected;
   }
 }
@@ -217,8 +225,8 @@ async function loadUsuarios() {
     var showInactive = document.getElementById('chk-show-inactive-users');
     var includeInactive = showInactive && showInactive.checked;
     var res = includeInactive
-      ? await window.UserService.getAllIncludeInactive()
-      : await window.UserService.getAll();
+      ? await UserService.getAllIncludeInactive()
+      : await UserService.getAll();
     const items = res.data?.items || [];
     usuariosItems = items;
     renderTablaUsuarios(items);
@@ -274,7 +282,7 @@ function renderTablaUsuarios(items) {
             <button class="btn btn-ghost btn-icon" data-action="edit" aria-label="Editar usuario">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"></path><path d="m15 5 4 4"></path></svg>
             </button>
-            <button class="btn btn-ghost btn-icon" data-action="reset" data-id="${user.id}" data-name="${window.escapeHtml(user.nombre)}" aria-label="Resetear contraseña">
+            <button class="btn btn-ghost btn-icon" data-action="reset" data-id="${user.id}" data-name="${escapeHtml(user.nombre)}" aria-label="Resetear contraseña">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
             </button>
             ${toggleBtn}
@@ -285,24 +293,24 @@ function renderTablaUsuarios(items) {
     return `
       <tr
         data-user-id="${user.id}"
-        data-name="${window.escapeHtml(user.nombre)}"
-        data-email="${window.escapeHtml(user.email)}"
-        data-role="${window.escapeHtml(user.rol)}"
-        data-role-id="${window.escapeHtml(user.role_id)}"
-        data-area="${window.escapeHtml(slugify(areaNombre))}"
-        data-area-id="${window.escapeHtml(user.area_id || '')}"
+        data-name="${escapeHtml(user.nombre)}"
+        data-email="${escapeHtml(user.email)}"
+        data-role="${escapeHtml(user.rol)}"
+        data-role-id="${escapeHtml(user.role_id)}"
+        data-area="${escapeHtml(slugify(areaNombre))}"
+        data-area-id="${escapeHtml(user.area_id || '')}"
         ${rowStyle}
       >
         <td>
           <div style="display:flex; align-items:center; gap:8px;">
             <div class="avatar avatar-sm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg></div>
-            ${window.escapeHtml(user.nombre)}
+            ${escapeHtml(user.nombre)}
           </div>
         </td>
-        <td>${window.escapeHtml(user.email)}</td>
+        <td>${escapeHtml(user.email)}</td>
         <td class="text-center">${badge(user.rol, user.rol === 'administrador' ? 'primary' : 'muted')}</td>
-        <td>${window.escapeHtml(areaNombre)}</td>
-        <td class="text-center">${window.escapeHtml(estadoUsuario)}</td>
+        <td>${escapeHtml(areaNombre)}</td>
+        <td class="text-center">${escapeHtml(estadoUsuario)}</td>
         <td class="text-center">${activoBadge}</td>
         <td class="td-actions">
           ${acciones}
@@ -432,9 +440,9 @@ async function saveUser() {
 
   try {
     if (isNew) {
-      await window.UserService.create(payload);
+      await UserService.create(payload);
     } else {
-      await window.UserService.update(Number(editingId), payload);
+      await UserService.update(Number(editingId), payload);
     }
 
     showToast(MSG.USERS.SAVED(isNew), 'success');
@@ -451,7 +459,7 @@ async function resetUserPassword(id, nombre) {
   var displayName = nombre || ('usuario #' + id);
   if (!confirm('¿Generar nueva contraseña temporal para "' + displayName + '"?')) return;
   try {
-    const res = await window.UserService.resetPassword(id);
+    const res = await UserService.resetPassword(id);
     showToast(MSG.PASSWORD.TEMP_DISPLAY(res.data.password_temporal), 'info', 8000);
   } catch (err) {
     showToast(err.message, 'error');
@@ -469,7 +477,7 @@ async function toggleUser(id) {
   if (!confirm('¿' + accion.charAt(0).toUpperCase() + accion.slice(1) + ' al usuario "' + nombre + '"?')) return;
 
   try {
-    await window.UserService.toggle(id);
+    await UserService.toggle(id);
     showToast(activo ? MSG.USERS.DEACTIVATED : MSG.USERS.ACTIVATED, 'success');
     await loadUsuarios();
   } catch (err) {
@@ -487,7 +495,7 @@ async function deleteUser(btn) {
   if (!id) return;
 
   try {
-    const res = await window.UserService.softDelete(id);
+    const res = await UserService.softDelete(id);
     if (!res.data?.deleted) {
       throw new Error('No se pudo eliminar el usuario');
     }

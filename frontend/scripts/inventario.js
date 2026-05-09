@@ -6,6 +6,22 @@
 import { MSG }                                      from './constants/messages.js';
 import { slugify, normalizeSearch, toStatusKey }    from './utils.js';
 import { statusBadge, activoBadge, tipoBadge }      from './ui-helpers.js';
+import { showToast }                                from './toast.js';
+import { store }                                    from './store.js';
+import { storageManager }                           from './storage-manager.js';
+import { FilterEngine }                             from './filter-engine.js';
+import { initFilterChips }                          from './filter-chips.js';
+import { escapeHtml }                               from './sanitizers.js';
+import { ProductService, CatalogService, MovementService, ProviderService } from './services.js';
+import { readXmlFile, xmlAttrOrChild, initXmlDropzone } from './xml-importer.js';
+import { initActiveNav } from './layout.js';
+import { modalManager } from './modals.js';
+import {
+  initModalEntry, initModalExit, initModalWaste,
+  addEntryRow, removeEntryRow, confirmEntry,
+  addExitRow, removeExitRow, confirmExit,
+  confirmWaste,
+} from './movements.js';
 
 const INVENTARIO_VIEW_NAME = 'inventario';
 
@@ -21,14 +37,14 @@ const _nameCheckTimers           = {};
 // ── Persistencia de filtros ───────────────────────────────────────────────
 
 function saveUIState() {
-  if (typeof window.storageManager?.saveUIState !== 'function') return;
+  if (typeof storageManager?.saveUIState !== 'function') return;
   const selectedStatuses = inventoryChipController
     ? inventoryChipController.getSelectedValues()
     : Array.from(document.querySelectorAll('.filter-chip.active'))
         .map(c => c.dataset.status)
         .filter(s => s !== '');
 
-  window.storageManager.saveUIState(INVENTARIO_VIEW_NAME, {
+  storageManager.saveUIState(INVENTARIO_VIEW_NAME, {
     nombre:       document.getElementById('inventario-search')?.value || '',
     categoria_id: document.getElementById('filter-category')?.value  || '',
     area_id:      document.getElementById('filter-area')?.value      || '',
@@ -37,8 +53,8 @@ function saveUIState() {
 }
 
 function restoreUIState() {
-  if (typeof window.storageManager?.loadUIState !== 'function') return null;
-  const saved = window.storageManager.loadUIState(INVENTARIO_VIEW_NAME);
+  if (typeof storageManager?.loadUIState !== 'function') return null;
+  const saved = storageManager.loadUIState(INVENTARIO_VIEW_NAME);
   if (!saved) return null;
 
   const searchInput     = document.getElementById('inventario-search');
@@ -89,13 +105,13 @@ function applyFilters() {
 /** Obtiene la lista de productos del backend y repinta la tabla. */
 async function loadProductos(filters = {}) {
   try {
-    window.store.setState({ ui: { loading: true } });
-    const res   = await window.ProductService.getAll(filters);
+    store.setState({ ui: { loading: true } });
+    const res   = await ProductService.getAll(filters);
     const items = res?.data?.items || [];
-    window.store.setState({ products: items, ui: { loading: false } });
+    store.setState({ products: items, ui: { loading: false } });
     renderTablaProductos(items);
   } catch (err) {
-    window.store.setState({ ui: { loading: false } });
+    store.setState({ ui: { loading: false } });
     showToast(err.message, 'error');
   }
 }
@@ -104,7 +120,7 @@ async function loadProductos(filters = {}) {
 
 /** Retorna mapas id→nombre para categorías, áreas y unidades. */
 function getCatalogMaps() {
-  const catalogs = window.store.getState().catalogs || {};
+  const catalogs = store.getState().catalogs || {};
   const toMap = items => Object.fromEntries((items || []).map(i => [String(i.id), i.nombre]));
   return {
     categorias: toMap(catalogs.categorias),
@@ -115,8 +131,8 @@ function getCatalogMaps() {
 
 /** Construye un `<select>` de catálogo con la opción seleccionada marcada. */
 function buildCatalogSelectHTML(type, selectedValue, ariaLabel) {
-  const catalogs = window.store.getState().catalogs || {};
-  const suppliers = window.store.getState().suppliers || [];
+  const catalogs = store.getState().catalogs || {};
+  const suppliers = store.getState().suppliers || [];
 
   const sourceMap = { category: catalogs.categorias, area: catalogs.areas, unit: catalogs.unidades, supplier: suppliers };
   const source    = sourceMap[type] || [];
@@ -129,28 +145,28 @@ function buildCatalogSelectHTML(type, selectedValue, ariaLabel) {
   source.forEach(item => {
     const id       = String(item.id);
     const selected = id === selectedId ? ' selected' : '';
-    options.push(`<option value="${window.escapeHtml(id)}"${selected}>${window.escapeHtml(item.nombre)}</option>`);
+    options.push(`<option value="${escapeHtml(id)}"${selected}>${escapeHtml(item.nombre)}</option>`);
   });
 
-  return `<select name="${nameMap[type]}" class="select-native" aria-label="${window.escapeHtml(ariaLabel)}">${options.join('')}</select>`;
+  return `<select name="${nameMap[type]}" class="select-native" aria-label="${escapeHtml(ariaLabel)}">${options.join('')}</select>`;
 }
 
 /** Rellena los selects de filtro de la barra superior con datos del store. */
 function populateFilterDropdowns() {
-  const catalogs       = window.store.getState().catalogs || {};
+  const catalogs       = store.getState().catalogs || {};
   const categoryFilter = document.getElementById('filter-category');
   const areaFilter     = document.getElementById('filter-area');
 
   if (categoryFilter) {
     categoryFilter.innerHTML = '<option value="">Todas las categorías</option>'
       + (catalogs.categorias || []).map(i =>
-          `<option value="${window.escapeHtml(String(i.id))}">${window.escapeHtml(i.nombre)}</option>`
+          `<option value="${escapeHtml(String(i.id))}">${escapeHtml(i.nombre)}</option>`
         ).join('');
   }
   if (areaFilter) {
     areaFilter.innerHTML = '<option value="">Todas las áreas</option>'
       + (catalogs.areas || []).map(i =>
-          `<option value="${window.escapeHtml(String(i.id))}">${window.escapeHtml(i.nombre)}</option>`
+          `<option value="${escapeHtml(String(i.id))}">${escapeHtml(i.nombre)}</option>`
         ).join('');
   }
 }
@@ -184,19 +200,19 @@ function renderTablaProductos(items) {
       !activo               ? 'tr-inactive' : '',
     ].filter(Boolean).join(' ');
 
-    const id = window.escapeHtml(String(item.id));
+    const id = escapeHtml(String(item.id));
 
     return `<tr${trClasses ? ` class="${trClasses}"` : ''}
-        data-name="${window.escapeHtml(item.nombre)}"
-        data-category="${window.escapeHtml(String(item.categoria_id))}"
-        data-area="${window.escapeHtml(String(item.area_id))}"
-        data-status="${window.escapeHtml(statusKey)}">
-      <td>${window.escapeHtml(item.nombre)}</td>
-      <td>${window.escapeHtml(categoriaNombre)}</td>
-      <td>${window.escapeHtml(areaNombre)}</td>
+        data-name="${escapeHtml(item.nombre)}"
+        data-category="${escapeHtml(String(item.categoria_id))}"
+        data-area="${escapeHtml(String(item.area_id))}"
+        data-status="${escapeHtml(statusKey)}">
+      <td>${escapeHtml(item.nombre)}</td>
+      <td>${escapeHtml(categoriaNombre)}</td>
+      <td>${escapeHtml(areaNombre)}</td>
       <td class="td-num${stockActual === 0 ? ' text-zero' : ''}">${stockActual}</td>
       <td class="td-num">${stockMin}</td>
-      <td>${window.escapeHtml(unidadNombre)}</td>
+      <td>${escapeHtml(unidadNombre)}</td>
       <td class="text-center">${statusBadge(item.estado)}</td>
       <td class="text-center">${activoBadge(activo)}</td>
       <td class="td-actions">
@@ -249,10 +265,10 @@ function renderHistorialEnModal(historial) {
     const usuario  = mov.usuario_nombre || (mov.usuario_id != null ? `Usuario ID: ${mov.usuario_id}` : '-');
 
     return `<tr>
-      <td>${window.escapeHtml(fecha)}</td>
+      <td>${escapeHtml(fecha)}</td>
       <td class="text-center">${tipoBadge(mov.tipo)}</td>
-      <td class="td-num">${window.escapeHtml(qtyLabel)}</td>
-      <td>${window.escapeHtml(usuario)}</td>
+      <td class="td-num">${escapeHtml(qtyLabel)}</td>
+      <td>${escapeHtml(usuario)}</td>
     </tr>`;
   }).join('');
 }
@@ -265,7 +281,7 @@ async function openProductDetail(btn) {
   if (!id) return;
 
   try {
-    const res      = await window.ProductService.getById(id);
+    const res      = await ProductService.getById(id);
     const data     = res?.data || {};
     const producto = data.producto  || {};
     const historial = data.historial || [];
@@ -324,7 +340,7 @@ async function openProductDetail(btn) {
 async function toggleProductFromDetail() {
   if (!currentDetailProductId) return;
   try {
-    await window.ProductService.toggle(currentDetailProductId);
+    await ProductService.toggle(currentDetailProductId);
     const accion = currentDetailProductActivo ? 'desactivado' : 'activado';
     showToast(MSG.INVENTORY.PRODUCT_TOGGLED(accion), 'success');
     modalManager.close('modal-product-detail');
@@ -340,14 +356,14 @@ async function toggleProductFromDetail() {
 function createAddProductRowHTML(id, data = {}) {
   return `
     <tr data-row-id="${id}">
-      <td><input type="text" name="name" class="input" placeholder="Nombre..." aria-label="Nombre del producto" value="${window.escapeHtml(data.name || '')}"></td>
+      <td><input type="text" name="name" class="input" placeholder="Nombre..." aria-label="Nombre del producto" value="${escapeHtml(data.name || '')}"></td>
       <td>${buildCatalogSelectHTML('category', data.categoryId,  'Categoría')}</td>
       <td>${buildCatalogSelectHTML('area',     data.areaId,      'Área')}</td>
       <td>${buildCatalogSelectHTML('unit',     data.unitId,      'Unidad de medida')}</td>
       <td>${buildCatalogSelectHTML('supplier', data.supplierId,  'Proveedor')}</td>
-      <td><input type="number" name="stock"     min="0" class="input" placeholder="0" aria-label="Stock"   value="${window.escapeHtml(data.stock   || '')}"></td>
-      <td><input type="number" name="min_stock" min="0" class="input" placeholder="0" aria-label="Mínimo" value="${window.escapeHtml(data.minimo  || '')}"></td>
-      <td><input type="number" name="max_stock" min="0" class="input" placeholder="0" aria-label="Máximo" value="${window.escapeHtml(data.maximo  || '')}"></td>
+      <td><input type="number" name="stock"     min="0" class="input" placeholder="0" aria-label="Stock"   value="${escapeHtml(data.stock   || '')}"></td>
+      <td><input type="number" name="min_stock" min="0" class="input" placeholder="0" aria-label="Mínimo" value="${escapeHtml(data.minimo  || '')}"></td>
+      <td><input type="number" name="max_stock" min="0" class="input" placeholder="0" aria-label="Máximo" value="${escapeHtml(data.maximo  || '')}"></td>
       <td style="white-space:nowrap;">
         <button type="button" class="btn btn-ghost btn-icon" data-action="move-to-existing"
             title="Mover a existentes" aria-label="Mover a existentes" style="display:none;">
@@ -404,7 +420,7 @@ function _attachNameDebounce(rowEl) {
 
     _nameCheckTimers[rowId] = setTimeout(async () => {
       try {
-        const res = await window.ProductService.checkName(name);
+        const res = await ProductService.checkName(name);
         nameInput.classList.toggle('input-warning', !!(res?.data?.exists));
         nameInput.title = res?.data?.exists ? 'Producto ya registrado' : '';
       } catch (_) {}
@@ -437,7 +453,7 @@ async function validateXmlProductNames() {
     const supplierId    = supplierSelect?.value ? Number(supplierSelect.value) : null;
 
     try {
-      const res = await window.ProductService.checkName(name);
+      const res = await ProductService.checkName(name);
       if (res?.data?.exists) return { row, productId: res.data.id, cantidad, supplierId };
     } catch (_) {}
     return null;
@@ -460,14 +476,14 @@ async function validateXmlProductNames() {
 
 /** Genera el HTML interno de una fila de producto existente. */
 function createExistingProductRowHTML(id, productId, cantidad, supplierId) {
-  const products  = window.store?.getState().products  || [];
-  const suppliers = window.store?.getState().suppliers || [];
+  const products  = store.getState().products  || [];
+  const suppliers = store.getState().suppliers || [];
   const maps      = getCatalogMaps();
 
   const productOptions = ['<option value="">Seleccionar producto...</option>']
     .concat(products.map(p => {
       const sel = String(p.id) === String(productId) ? ' selected' : '';
-      return `<option value="${window.escapeHtml(String(p.id))}"${sel}>${window.escapeHtml(p.nombre)}</option>`;
+      return `<option value="${escapeHtml(String(p.id))}"${sel}>${escapeHtml(p.nombre)}</option>`;
     }));
 
   let unitName = '';
@@ -479,7 +495,7 @@ function createExistingProductRowHTML(id, productId, cantidad, supplierId) {
   const supplierOptions = ['<option value="">Proveedor...</option>']
     .concat(suppliers.map(s => {
       const sel = String(s.id) === String(supplierId) ? ' selected' : '';
-      return `<option value="${window.escapeHtml(String(s.id))}"${sel}>${window.escapeHtml(s.nombre)}</option>`;
+      return `<option value="${escapeHtml(String(s.id))}"${sel}>${escapeHtml(s.nombre)}</option>`;
     }));
 
   return `
@@ -490,7 +506,7 @@ function createExistingProductRowHTML(id, productId, cantidad, supplierId) {
         </select>
       </td>
       <td><input type="number" name="quantity" min="1" class="input" style="width:70px;" placeholder="0" aria-label="Cantidad" value="${cantidad > 0 ? cantidad : ''}"></td>
-      <td><span class="text-sm text-muted" id="ap-existing-unit-${id}">${window.escapeHtml(unitName)}</span></td>
+      <td><span class="text-sm text-muted" id="ap-existing-unit-${id}">${escapeHtml(unitName)}</span></td>
       <td><select name="supplier" class="select-native" aria-label="Proveedor">${supplierOptions.join('')}</select></td>
       <td style="white-space:nowrap;">
         <button type="button" class="btn btn-ghost btn-icon" data-action="move-to-new"
@@ -532,7 +548,7 @@ function removeExistingProductRow(id) {
 
 /** Actualiza el span de unidad al cambiar el producto seleccionado. */
 function onExistingProductChange(selectEl, rowId) {
-  const products  = window.store?.getState().products || [];
+  const products  = store.getState().products || [];
   const maps      = getCatalogMaps();
   const unitSpan  = document.getElementById(`ap-existing-unit-${rowId}`);
   if (!unitSpan) return;
@@ -556,7 +572,7 @@ function moveNewToExisting(rowId) {
   const cantidad   = parseFloat(stockInput?.value) || 0;
   const supplierId = supplierSelect?.value ? Number(supplierSelect.value) : null;
 
-  const products = window.store?.getState().products || [];
+  const products = store.getState().products || [];
   const match    = products.find(p => normalizeSearch(p.nombre) === name);
 
   addExistingProductRow(match?.id || null, cantidad, supplierId);
@@ -589,7 +605,7 @@ function moveExistingToNew(rowId) {
 
   const prefill = { stock: cantidad > 0 ? String(cantidad) : '', supplierId };
   if (productId) {
-    const product = (window.store?.getState().products || []).find(p => p.id === productId);
+    const product = (store.getState().products || []).find(p => p.id === productId);
     if (product) {
       prefill.name       = product.nombre;
       prefill.categoryId = product.categoria_id;
@@ -683,12 +699,12 @@ async function saveNewProducts() {
   try {
     let creados = 0, omitidos = 0;
     if (payloadItems.length) {
-      const res = await window.ProductService.createBulk(payloadItems);
+      const res = await ProductService.createBulk(payloadItems);
       creados   = Number(res?.data?.creados  || 0);
       omitidos  = Number(res?.data?.omitidos || 0);
     }
     if (movementItems.length) {
-      await window.MovementService.create('entrada', movementItems, { motivo: 'Carga desde inventario' });
+      await MovementService.create('entrada', movementItems, { motivo: 'Carga desde inventario' });
     }
 
     modalManager.close('modal-add-product');
@@ -731,9 +747,9 @@ async function saveXmlSupplier() {
   }
 
   try {
-    await window.ProviderService.create({ nombre, email: email || null, telefono: telefono || null });
-    const res = await window.ProviderService.getAll();
-    if (res?.data?.items) window.store.setState({ suppliers: res.data.items });
+    await ProviderService.create({ nombre, email: email || null, telefono: telefono || null });
+    const res = await ProviderService.getAll();
+    if (res?.data?.items) store.setState({ suppliers: res.data.items });
 
     showToast(MSG.INVENTORY.SUPPLIER_ADDED(nombre), 'success');
     modalManager.close('modal-xml-proveedor');
@@ -770,8 +786,8 @@ function fillAddProductRowsFromXml(rows) {
   const tbody = document.getElementById('add-product-rows');
   if (!tbody) return;
 
-  const catalogs  = window.store.getState().catalogs  || {};
-  const suppliers = window.store.getState().suppliers || [];
+  const catalogs  = store.getState().catalogs  || {};
+  const suppliers = store.getState().suppliers || [];
 
   tbody.innerHTML  = '';
   addProductRowCount = 0;
@@ -832,7 +848,7 @@ async function importAddProductFromXml(file) {
     }));
 
     if (supplierNameFromXml) {
-      const storeSuppliers = window.store?.getState().suppliers || [];
+      const storeSuppliers = store.getState().suppliers || [];
       const found = storeSuppliers.find(s => normalizeSearch(s.nombre) === normalizeSearch(supplierNameFromXml));
       if (!found) { _openXmlSupplierModal(supplierNameFromXml, rows); return; }
     }
@@ -929,7 +945,7 @@ function openMovementFromRow(productId, tipo) {
 // ── Carga de catálogos en store ───────────────────────────────────────────
 
 async function ensureCatalogsInStore() {
-  const state    = window.store.getState();
+  const state    = store.getState();
   const catalogs = state.catalogs || {};
   const hasAny   = (catalogs.categorias || []).length > 0
                 || (catalogs.areas      || []).length > 0
@@ -937,15 +953,15 @@ async function ensureCatalogsInStore() {
 
   if (!hasAny) {
     try {
-      const catalogsData = await window.CatalogService.getAllCatalogs();
-      window.store.setState({ catalogs: catalogsData });
+      const catalogsData = await CatalogService.getAllCatalogs();
+      store.setState({ catalogs: catalogsData });
     } catch (_) {}
   }
 
   if (!(state.suppliers?.length)) {
     try {
-      const res = await window.ProviderService.getAll();
-      if (res?.data?.items) window.store.setState({ suppliers: res.data.items });
+      const res = await ProviderService.getAll();
+      if (res?.data?.items) store.setState({ suppliers: res.data.items });
     } catch (_) {}
   }
 }
@@ -954,6 +970,28 @@ async function ensureCatalogsInStore() {
 
 document.addEventListener('DOMContentLoaded', async () => {
   initActiveNav();
+
+  // Registrar callbacks de init de modales de movimientos
+  modalManager.registerInit('modal-entry', initModalEntry);
+  modalManager.registerInit('modal-exit',  initModalExit);
+  modalManager.registerInit('modal-waste', initModalWaste);
+
+  // Event delegation: botones estáticos de modales
+  document.getElementById('btn-add-entry-row')  ?.addEventListener('click', addEntryRow);
+  document.getElementById('btn-confirm-entry')  ?.addEventListener('click', confirmEntry);
+  document.getElementById('btn-add-exit-row')   ?.addEventListener('click', addExitRow);
+  document.getElementById('btn-confirm-exit')   ?.addEventListener('click', confirmExit);
+  document.getElementById('btn-confirm-waste')  ?.addEventListener('click', confirmWaste);
+
+  // Event delegation: botones de eliminar fila (dinámicos)
+  document.getElementById('entry-rows')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-action="remove"]');
+    if (btn) removeEntryRow(Number(btn.closest('tr')?.dataset.rowId));
+  });
+  document.getElementById('exit-rows')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-action="remove"]');
+    if (btn) removeExitRow(Number(btn.closest('tr')?.dataset.rowId));
+  });
 
   await ensureCatalogsInStore();
   populateFilterDropdowns();
@@ -1088,6 +1126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('products:changed',  () => loadProductos(getApiFilters()));
 
   await loadProductos(getApiFilters());
+  applyFilters();
   saveUIState();
   initAddProductXmlImport();
 

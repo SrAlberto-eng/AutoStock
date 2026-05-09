@@ -3,126 +3,95 @@
  * Utilidad compartida para chips de filtros en modo single o multi-select.
  */
 
-(function () {
-  'use strict';
+function setChipState(chip, isActive) {
+  if (!chip) return;
+  chip.classList.toggle('active', !!isActive);
+  chip.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+}
 
-  function setChipState(chip, isActive) {
-    if (!chip) return;
-    chip.classList.toggle('active', !!isActive);
-    chip.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+function initFilterChips(options = {}) {
+  const chipSelector                = options.chipSelector || '.filter-chip';
+  const mode                        = options.mode === 'multi' ? 'multi' : 'single';
+  const datasetKey                  = options.datasetKey || 'status';
+  const allValue                    = options.allValue !== undefined ? String(options.allValue) : '';
+  const normalizeAllWhenAllSelected = options.normalizeAllWhenAllSelected !== false;
+  const onChange                    = typeof options.onChange === 'function' ? options.onChange : () => {};
+
+  const chips = Array.from(document.querySelectorAll(chipSelector));
+  if (!chips.length) return { chips: [], getSelectedValues: () => [] };
+
+  const allChip    = chips.find(chip => String(chip.dataset[datasetKey] || '') === allValue) || null;
+  const nonAllChips = chips.filter(chip => chip !== allChip);
+
+  function getSelectedValues() {
+    if (mode === 'single') {
+      const activeChip = chips.find(chip => chip.classList.contains('active')) || null;
+      if (!activeChip) return [];
+      const activeValue = String(activeChip.dataset[datasetKey] || '');
+      return activeValue === allValue ? [] : [activeValue];
+    }
+    return nonAllChips
+      .filter(chip => chip.classList.contains('active'))
+      .map(chip => String(chip.dataset[datasetKey] || ''));
   }
 
-  function initFilterChips(options) {
-    var opts = options || {};
-    var chipSelector = opts.chipSelector || '.filter-chip';
-    var mode = opts.mode === 'multi' ? 'multi' : 'single';
-    var datasetKey = opts.datasetKey || 'status';
-    var allValue = opts.allValue !== undefined ? String(opts.allValue) : '';
-    var normalizeAllWhenAllSelected = opts.normalizeAllWhenAllSelected !== false;
-    var onChange = typeof opts.onChange === 'function' ? opts.onChange : function () {};
+  function activateAll() {
+    if (allChip) setChipState(allChip, true);
+    nonAllChips.forEach(chip => setChipState(chip, false));
+  }
 
-    var chips = Array.from(document.querySelectorAll(chipSelector));
-    if (!chips.length) {
-      return {
-        chips: [],
-        getSelectedValues: function () { return []; }
-      };
+  function ensureValidInitialState() {
+    if (!allChip) return;
+    if (mode === 'single') {
+      const activeCount = chips.filter(chip => chip.classList.contains('active')).length;
+      if (activeCount !== 1) activateAll();
+      return;
     }
+    const activeNonAll = nonAllChips.filter(chip => chip.classList.contains('active'));
+    if (allChip.classList.contains('active') && activeNonAll.length > 0) setChipState(allChip, false);
+    if (!allChip.classList.contains('active') && activeNonAll.length === 0) setChipState(allChip, true);
+  }
 
-    var allChip = chips.find(function (chip) {
-      return String(chip.dataset[datasetKey] || '') === allValue;
-    }) || null;
-
-    var nonAllChips = chips.filter(function (chip) { return chip !== allChip; });
-
-    function getSelectedValues() {
-      if (mode === 'single') {
-        var activeChip = chips.find(function (chip) { return chip.classList.contains('active'); }) || null;
-        if (!activeChip) return [];
-        var activeValue = String(activeChip.dataset[datasetKey] || '');
-        return activeValue === allValue ? [] : [activeValue];
-      }
-
-      return nonAllChips
-        .filter(function (chip) { return chip.classList.contains('active'); })
-        .map(function (chip) { return String(chip.dataset[datasetKey] || ''); });
-    }
-
-    function emitChange() {
-      onChange(getSelectedValues());
-    }
-
-    function activateAll() {
-      if (allChip) setChipState(allChip, true);
-      nonAllChips.forEach(function (chip) { setChipState(chip, false); });
-    }
-
-    function ensureValidInitialState() {
-      if (!allChip) return;
+  chips.forEach(chip => {
+    chip.addEventListener('click', e => {
+      e.preventDefault();
 
       if (mode === 'single') {
-        var activeCount = chips.filter(function (chip) { return chip.classList.contains('active'); }).length;
-        if (activeCount !== 1) activateAll();
+        chips.forEach(item => setChipState(item, false));
+        setChipState(chip, true);
+        onChange(getSelectedValues());
         return;
       }
 
-      var activeNonAll = nonAllChips.filter(function (chip) { return chip.classList.contains('active'); });
-      if (allChip.classList.contains('active') && activeNonAll.length > 0) {
-        setChipState(allChip, false);
+      if (chip === allChip) {
+        activateAll();
+        onChange(getSelectedValues());
+        return;
       }
-      if (!allChip.classList.contains('active') && activeNonAll.length === 0) {
-        setChipState(allChip, true);
+
+      if (chip.classList.contains('active')) {
+        setChipState(chip, false);
+        const hasActive = nonAllChips.some(item => item.classList.contains('active'));
+        if (!hasActive && allChip) setChipState(allChip, true);
+        onChange(getSelectedValues());
+        return;
       }
-    }
 
-    chips.forEach(function (chip) {
-      chip.addEventListener('click', function (e) {
-        e.preventDefault();
+      setChipState(chip, true);
+      if (allChip) setChipState(allChip, false);
 
-        if (mode === 'single') {
-          chips.forEach(function (item) { setChipState(item, false); });
-          setChipState(chip, true);
-          emitChange();
-          return;
-        }
+      if (normalizeAllWhenAllSelected) {
+        const allSelected = nonAllChips.length > 0 && nonAllChips.every(item => item.classList.contains('active'));
+        if (allSelected) activateAll();
+      }
 
-        if (chip === allChip) {
-          activateAll();
-          emitChange();
-          return;
-        }
-
-        if (chip.classList.contains('active')) {
-          setChipState(chip, false);
-          var hasActive = nonAllChips.some(function (item) { return item.classList.contains('active'); });
-          if (!hasActive && allChip) setChipState(allChip, true);
-          emitChange();
-          return;
-        }
-
-        setChipState(chip, true);
-        if (allChip) setChipState(allChip, false);
-
-        if (normalizeAllWhenAllSelected) {
-          var allSelected = nonAllChips.length > 0 && nonAllChips.every(function (item) {
-            return item.classList.contains('active');
-          });
-          if (allSelected) activateAll();
-        }
-
-        emitChange();
-      });
+      onChange(getSelectedValues());
     });
+  });
 
-    ensureValidInitialState();
+  ensureValidInitialState();
 
-    return {
-      chips: chips,
-      getSelectedValues: getSelectedValues,
-      allChip: allChip,
-      nonAllChips: nonAllChips
-    };
-  }
+  return { chips, getSelectedValues, allChip, nonAllChips };
+}
 
-  window.initFilterChips = initFilterChips;
-})();
+export { initFilterChips };

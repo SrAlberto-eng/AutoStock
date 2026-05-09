@@ -3,6 +3,7 @@
  * Utilidades puras reutilizables (sin DOM, sin window).
  * Importar con: import { slugify, badge, ... } from './utils.js'
  */
+import { escapeHtml } from './sanitizers.js';
 
 /**
  * Convierte un string a slug: lowercase, sin acentos, espacios → guiones,
@@ -36,7 +37,7 @@ export function normalizeSearch(str) {
  * @param {'success'|'danger'|'warning'|'primary'|'muted'} variant
  */
 export function badge(text, variant) {
-  return '<span class="badge badge-' + variant + '">' + window.escapeHtml(String(text)) + '</span>';
+  return '<span class="badge badge-' + variant + '">' + escapeHtml(String(text)) + '</span>';
 }
 
 /**

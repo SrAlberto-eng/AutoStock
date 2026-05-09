@@ -5,11 +5,46 @@
  *
  * La lógica de modales de movimientos (entrada/salida/merma) vive en movements.js.
  */
-import { MSG } from './constants/messages.js';
+import { MSG }          from './constants/messages.js';
+import { showToast }    from './toast.js';
+import { store }        from './store.js';
+import { storageManager } from './storage-manager.js';
+import { escapeHtml }   from './sanitizers.js';
+import { MovementService, ProductService, CatalogService } from './services.js';
+import { readXmlFile, xmlAttrOrChild, initXmlDropzone } from './xml-importer.js';
+import { initActiveNav } from './layout.js';
+import { modalManager } from './modals.js';
+import {
+  initModalEntry, initModalExit, initModalWaste,
+  addEntryRow, removeEntryRow, confirmEntry,
+  addExitRow, removeExitRow, confirmExit,
+  confirmWaste,
+} from './movements.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Marcar nav activo
   initActiveNav();
+
+  // Registrar callbacks de init de modales de movimientos
+  modalManager.registerInit('modal-entry', initModalEntry);
+  modalManager.registerInit('modal-exit',  initModalExit);
+  modalManager.registerInit('modal-waste', initModalWaste);
+
+  // Event delegation: botones estáticos de modales
+  document.getElementById('btn-add-entry-row')  ?.addEventListener('click', addEntryRow);
+  document.getElementById('btn-confirm-entry')  ?.addEventListener('click', confirmEntry);
+  document.getElementById('btn-add-exit-row')   ?.addEventListener('click', addExitRow);
+  document.getElementById('btn-confirm-exit')   ?.addEventListener('click', confirmExit);
+  document.getElementById('btn-confirm-waste')  ?.addEventListener('click', confirmWaste);
+
+  // Event delegation: botones de eliminar fila (dinámicos)
+  document.getElementById('entry-rows')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-action="remove"]');
+    if (btn) removeEntryRow(Number(btn.closest('tr')?.dataset.rowId));
+  });
+  document.getElementById('exit-rows')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-action="remove"]');
+    if (btn) removeExitRow(Number(btn.closest('tr')?.dataset.rowId));
+  });
 
   // Cargar datos reales del dashboard
   loadDashboard();
@@ -31,14 +66,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const href = link.getAttribute('href') || '';
       const estadoMatch = href.match(/estado=([^&]+)/);
       const estadoParam = estadoMatch ? decodeURIComponent(estadoMatch[1]) : '';
-      const estadoDeseado = estadoParam === 'agotado' ? 'Agotado' : 'Poca existencia';
+      const estadoDeseado = estadoParam === 'agotado' ? 'agotado' : 'bajo_minimo';
 
-      if (window.storageManager && typeof window.storageManager.saveUIState === 'function') {
-        const prev = (typeof window.storageManager.loadUIState === 'function')
-          ? (window.storageManager.loadUIState('inventario') || {})
-          : {};
+      if (typeof storageManager.saveUIState === 'function') {
+        const prev = storageManager.loadUIState('inventario') || {};
 
-        window.storageManager.saveUIState('inventario', Object.assign({}, prev, {
+        storageManager.saveUIState('inventario', Object.assign({}, prev, {
           estado: estadoDeseado
         }));
       }
@@ -110,7 +143,7 @@ function updateEntryUnitLabel(row, product) {
   const unitLabel = row.querySelector('[id^="entry-unit-"]');
   if (!unitLabel) return;
 
-  const units = (window.store && window.store.getState().catalogs.unidades) || [];
+  const units = store.getState().catalogs.unidades || [];
   const unit = units.find(function (item) {
     return String(item.id) === String(product.unidad_id);
   });
@@ -122,7 +155,7 @@ function renderImportPreview(previewRows) {
   const tbody = document.getElementById('entry-rows');
   if (!tbody) return;
 
-  const products = (window.store && window.store.getState().products) || [];
+  const products = store.getState().products || [];
   if (!products.length) return;
 
   const rows = Array.from(tbody.querySelectorAll('tr'));
@@ -173,16 +206,27 @@ async function handleXmlPreview(productosParseados, xmlBase64) {
   if (!xmlBase64 || !productosParseados || !productosParseados.length) return;
 
   try {
-    await Promise.all([_ensureProductsLoaded(), _ensureCatalogsLoaded()]);
+    const [productsRes, catalogsRes] = await Promise.all([
+      ProductService.getAll({ limit: 200 }).catch(() => null),
+      CatalogService.getAllCatalogs().catch(() => null),
+    ]);
+
+    const products = (productsRes?.data?.items || []);
+    if (!products.length) {
+      showToast(MSG.DASHBOARD.XML_SUGGESTIONS_UNAVAILABLE, 'info');
+      return;
+    }
+
     showToast(MSG.DASHBOARD.XML_SUGGESTIONS_LOADING, 'info', 2000);
 
-    const res = await window.MovementService.previewImport(xmlBase64);
+    const res = await MovementService.previewImport(xmlBase64);
     const preview = res && res.data
       ? (res.data.lineas || res.data.productos || [])
       : [];
 
     renderImportPreview(preview);
   } catch (err) {
+    console.error('XML preview error:', err);
     showToast(MSG.DASHBOARD.XML_SUGGESTIONS_UNAVAILABLE, 'info');
   }
 }
@@ -241,9 +285,7 @@ function fillEntryRowsFromXml(rows) {
 // ── Dashboard data loading ──────────────────────────────────────────────────
 
 async function loadDashboard() {
-  // Primero asegurar que los productos estén cargados (necesario para movimientos recientes)
-  await _ensureProductsLoaded();
-  // Luego cargar el resto en paralelo
+  // Cargar dashboard summary y movimientos recientes en paralelo
   await Promise.allSettled([
     _loadSummaryCards(),
     _loadRecentMovements(),
@@ -252,7 +294,7 @@ async function loadDashboard() {
 
 async function _loadSummaryCards() {
   try {
-    const res = await window.MovementService.getDashboardSummary();
+    const res = await MovementService.getDashboardSummary();
     if (!res || !res.data) return;
     const d = res.data;
     const set = (id, val) => {
@@ -261,18 +303,16 @@ async function _loadSummaryCards() {
     };
     set('stat-entradas-hoy', d.entradas_hoy);
     set('stat-salidas-hoy',  d.salidas_hoy);
-    const products = window.store && window.store.getState().products;
-    set('stat-productos-total', products ? products.length : '—');
 
-    const esc = (value) => {
-      if (typeof window.escapeHtml === 'function') return window.escapeHtml(value);
-      return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    };
+    try {
+      const productsRes = await ProductService.getAll({ limit: 200 });
+      const totalProducts = productsRes?.data?.total ?? productsRes?.data?.items?.length ?? '—';
+      set('stat-productos-total', totalProducts);
+    } catch (_) {
+      set('stat-productos-total', '—');
+    }
+
+
 
     const alertCards = document.querySelectorAll('.alerts-grid .card');
     const agotadosWrap = alertCards[0] ? alertCards[0].querySelector('.space-y-3') : null;
@@ -344,7 +384,7 @@ async function _loadSummaryCards() {
           left.style.gap = '12px';
 
           const dot = document.createElement('span');
-          dot.className = 'movement-dot movement-dot--salida';
+          dot.className = 'movement-dot movement-dot--warning';
 
           const info = document.createElement('div');
           const name = document.createElement('p');
@@ -378,7 +418,7 @@ async function _loadRecentMovements() {
   };
 
   try {
-    const res = await window.MovementService.getAll({ limit: 5 });
+    const res = await MovementService.getAll({ limit: 5 });
     if (!res || !res.data || !res.data.items) {
       setFallback();
       return;
@@ -388,7 +428,7 @@ async function _loadRecentMovements() {
       setFallback();
       return;
     }
-    const products = (window.store && window.store.getState().products) || [];
+    const products = store.getState().products || [];
     list.innerHTML = items.map(function (m) {
       const sign  = m.tipo === 'entrada' ? '+' : '-';
       const dotClass = 'movement-dot movement-dot--' + (m.tipo || 'salida');

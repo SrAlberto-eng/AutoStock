@@ -3,7 +3,10 @@
  * Toggle de contraseña, validación, spinner de carga y redirección
  * al dashboard. Fuerza cambio de contraseña si el backend lo indica.
  */
-import { MSG } from './constants/messages.js';
+import { MSG }             from './constants/messages.js';
+import { showToast }       from './toast.js';
+import { apiClient }       from './api-client.js';
+import { initThemeSwitcher } from './theme-switcher.js';
 
 const form          = document.getElementById('login-form');
 const identifierInput = document.getElementById('identifier');
@@ -18,7 +21,7 @@ const rememberChk   = document.getElementById('remember-user');
 
 let showPassword = false;
 
-if (window.initThemeSwitcher) window.initThemeSwitcher();
+initThemeSwitcher();
 
 const savedIdentifier = localStorage.getItem('as_remember_identifier');
 if (savedIdentifier && identifierInput) {
@@ -65,9 +68,7 @@ form?.addEventListener('submit', async e => {
   setLoading(true);
 
   try {
-    if (typeof window.apiClient?.post !== 'function') throw new Error(MSG.AUTH.API_UNAVAILABLE);
-
-    const result = await window.apiClient.post('/auth/login', { identifier, password });
+    const result = await apiClient.post('/auth/login', { identifier, password });
 
     if (!result || result.success !== true) {
       showToast(result?.error || MSG.AUTH.CONNECTION_ERROR, 'error');
@@ -125,8 +126,7 @@ async function promptForcePasswordChange() {
   }
 
   try {
-    if (typeof window.apiClient?.post !== 'function') throw new Error(MSG.AUTH.API_UNAVAILABLE);
-    await window.apiClient.post('/usuarios/cambiar-password', { password: nueva });
+    await apiClient.post('/usuarios/cambiar-password', { password: nueva });
     localStorage.removeItem('debe_cambiar_password');
     window.location.href = getDashboardHref();
   } catch (err) {
