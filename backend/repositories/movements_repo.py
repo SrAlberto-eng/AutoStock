@@ -167,6 +167,10 @@ def get_dashboard_summary(conn, today_iso: str) -> dict:
         text("SELECT COUNT(*) FROM productos WHERE activo=1 AND stock_actual=0"),
     ).scalar_one()
 
+    total_productos = conn.execute(
+        text("SELECT COUNT(*) FROM productos WHERE activo=1"),
+    ).scalar_one()
+
     lista_bajo = conn.execute(
         text(
             "SELECT id, nombre, stock_actual, stock_min "
@@ -191,6 +195,7 @@ def get_dashboard_summary(conn, today_iso: str) -> dict:
         "mermas_hoy": int(mermas),
         "productos_bajo_minimo": int(bajo_min),
         "productos_agotados": int(agotados),
+        "total_productos": int(total_productos),
         "lista_bajo_minimo": [
             {
                 "id": int(r["id"]),

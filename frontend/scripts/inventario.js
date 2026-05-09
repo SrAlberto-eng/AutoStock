@@ -34,6 +34,7 @@ let currentDetailProductId       = null;
 let currentDetailProductActivo   = true;
 let _pendingXmlImport            = null;
 const _nameCheckTimers           = {};
+let   _searchDebounceTimer       = null;
 
 // ── Persistencia de filtros ───────────────────────────────────────────────
 
@@ -85,13 +86,15 @@ function restoreStatusChips(savedEstado) {
 // ── Filtros activos ───────────────────────────────────────────────────────
 
 function getApiFilters() {
+  const searchInput    = document.getElementById('inventario-search');
   const categoryFilter = document.getElementById('filter-category');
   const areaFilter     = document.getElementById('filter-area');
   const showInactive   = document.getElementById('chk-show-inactive-products');
 
   const filters = {
-    categoria_id: categoryFilter?.value || undefined,
-    area_id:      areaFilter?.value     || undefined,
+    nombre:       searchInput?.value.trim()  || undefined,
+    categoria_id: categoryFilter?.value      || undefined,
+    area_id:      areaFilter?.value          || undefined,
   };
   if (showInactive?.checked) filters.include_inactive = true;
   return filters;
@@ -560,23 +563,28 @@ function onExistingProductChange(selectEl, rowId) {
 
 // ── Mover filas entre secciones ───────────────────────────────────────────
 
-function moveNewToExisting(rowId) {
+async function moveNewToExisting(rowId) {
   const tbody = document.getElementById('add-product-rows');
   const row   = tbody?.querySelector(`[data-row-id="${rowId}"]`);
   if (!row) return;
 
-  const nameInput     = row.querySelector('input[name="name"]');
-  const stockInput    = row.querySelector('input[name="stock"]');
+  const nameInput      = row.querySelector('input[name="name"]');
+  const stockInput     = row.querySelector('input[name="stock"]');
   const supplierSelect = row.querySelector('select[name="supplier"]');
 
-  const name       = normalizeSearch(nameInput?.value || '');
+  const name       = (nameInput?.value || '').trim();
   const cantidad   = parseFloat(stockInput?.value) || 0;
   const supplierId = supplierSelect?.value ? Number(supplierSelect.value) : null;
 
-  const products = store.getState().products || [];
-  const match    = products.find(p => normalizeSearch(p.nombre) === name);
+  let productId = null;
+  if (name) {
+    try {
+      const res = await ProductService.checkName(name);
+      productId = res?.data?.id ?? null;
+    } catch (_) {}
+  }
 
-  addExistingProductRow(match?.id || null, cantidad, supplierId);
+  addExistingProductRow(productId, cantidad, supplierId);
 
   const allNewRows = document.querySelectorAll('#add-product-rows tr');
   if (allNewRows.length <= 1) {
@@ -995,6 +1003,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const rawSaved = storageManager.loadUIState ? storageManager.loadUIState(INVENTARIO_VIEW_NAME) : null;
   const initialFilters = {
+    nombre:       rawSaved?.nombre       || undefined,
     categoria_id: rawSaved?.categoria_id || undefined,
     area_id:      rawSaved?.area_id      || undefined,
   };
@@ -1007,8 +1016,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Filtros de la barra superior
   document.getElementById('inventario-search')?.addEventListener('input', () => {
-    applyFilters();
     saveUIState();
+    clearTimeout(_searchDebounceTimer);
+    _searchDebounceTimer = setTimeout(() => loadProductos(getApiFilters()), 300);
   });
   document.getElementById('filter-category')?.addEventListener('change', () => {
     applyFilters();
@@ -1047,7 +1057,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   inventoryFilterEngine = new FilterEngine({
     rowSelector:  '#inventario-tbody tr',
     getCriteria:  () => ({
-      searchVal:       (document.getElementById('inventario-search')?.value || '').trim().toLowerCase(),
       category:        (document.getElementById('filter-category')?.value  || '').toLowerCase(),
       area:            (document.getElementById('filter-area')?.value      || '').toLowerCase(),
       selectedStatuses: inventoryChipController
@@ -1057,13 +1066,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             .filter(s => s !== ''),
     }),
     mapRow:       row => ({
-      rowName:     (row.dataset.name     || '').toLowerCase(),
       rowCategory: (row.dataset.category || '').toLowerCase(),
       rowArea:     (row.dataset.area     || '').toLowerCase(),
       rowStatus:   (row.dataset.status   || '').toLowerCase(),
     }),
     predicates: [
-      (c, r) => !c.searchVal        || r.rowName.includes(c.searchVal),
       (c, r) => !c.category         || r.rowCategory === c.category,
       (c, r) => !c.area             || r.rowArea     === c.area,
       (c, r) => !c.selectedStatuses.length || c.selectedStatuses.includes(r.rowStatus),

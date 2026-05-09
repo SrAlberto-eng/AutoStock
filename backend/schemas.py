@@ -295,6 +295,7 @@ class DashboardResumenResponse(BaseModel):
     mermas_hoy: int = Field(default=0, example=1)
     productos_bajo_minimo: int = Field(default=0, example=2)
     productos_agotados: int = Field(default=0, example=0)
+    total_productos: int = Field(default=0, example=42)
     lista_bajo_minimo: list[dict] = Field(default_factory=list)
     lista_agotados: list[dict] = Field(default_factory=list)
 
