@@ -39,7 +39,13 @@
       </div>
       <span class="sidebar-logo-text">AutoStock</span>
     </div>
-    <nav id="sidebar-nav"></nav>
+    <nav id="sidebar-nav">
+      <div class="nav-item-skel"><div class="skeleton" style="width:20px;height:20px;border-radius:4px;flex-shrink:0;"></div><div class="skeleton" style="height:14px;width:65px;"></div></div>
+      <div class="nav-item-skel"><div class="skeleton" style="width:20px;height:20px;border-radius:4px;flex-shrink:0;"></div><div class="skeleton" style="height:14px;width:120px;"></div></div>
+      <div class="nav-item-skel"><div class="skeleton" style="width:20px;height:20px;border-radius:4px;flex-shrink:0;"></div><div class="skeleton" style="height:14px;width:108px;"></div></div>
+      <div class="nav-item-skel"><div class="skeleton" style="width:20px;height:20px;border-radius:4px;flex-shrink:0;"></div><div class="skeleton" style="height:14px;width:62px;"></div></div>
+      <div class="nav-item-skel"><div class="skeleton" style="width:20px;height:20px;border-radius:4px;flex-shrink:0;"></div><div class="skeleton" style="height:14px;width:70px;"></div></div>
+    </nav>
     <div class="sidebar-footer">
       <button id="sidebar-toggle" class="sidebar-toggle-btn" aria-label="Colapsar menú">
         <span id="sidebar-toggle-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></svg></span>
@@ -121,7 +127,18 @@
 
       <!-- Inventory table -->
       <div class="table-wrapper">
-        <table>
+        <table style="table-layout:fixed;">
+          <colgroup>
+            <col style="width:22%;"><!-- Nombre -->
+            <col style="width:13%;"><!-- Categoría -->
+            <col style="width:11%;"><!-- Área -->
+            <col style="width:8%;"><!-- Stock actual -->
+            <col style="width:8%;"><!-- Stock mínimo -->
+            <col style="width:9%;"><!-- Unidad -->
+            <col style="width:10%;"><!-- Estado -->
+            <col style="width:10%;"><!-- Activo -->
+            <col style="width:9%;"><!-- Acciones -->
+          </colgroup>
           <thead>
             <tr>
               <th class="text-left">Nombre</th>
@@ -131,12 +148,66 @@
               <th class="text-center">Stock mínimo</th>
               <th class="text-left">Unidad</th>
               <th>Estado</th>
-              <th style="width:100px;">Activo</th>
-              <th style="width:80px;"></th>
+              <th class="text-center">Activo</th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="inventario-tbody">
-            <!-- Aquí van las filas de cada producto -->
+            <tr class="skeleton-row">
+              <td><span class="skeleton" style="width:65%;"></span></td>
+              <td><span class="skeleton" style="width:80%;"></span></td>
+              <td><span class="skeleton" style="width:75%;"></span></td>
+              <td><span class="skeleton" style="width:50%;"></span></td>
+              <td><span class="skeleton" style="width:50%;"></span></td>
+              <td><span class="skeleton" style="width:60%;"></span></td>
+              <td><span class="skeleton" style="width:55%;"></span></td>
+              <td><span class="skeleton" style="width:40%;"></span></td>
+              <td></td>
+            </tr>
+            <tr class="skeleton-row">
+              <td><span class="skeleton" style="width:80%;"></span></td>
+              <td><span class="skeleton" style="width:60%;"></span></td>
+              <td><span class="skeleton" style="width:85%;"></span></td>
+              <td><span class="skeleton" style="width:45%;"></span></td>
+              <td><span class="skeleton" style="width:45%;"></span></td>
+              <td><span class="skeleton" style="width:55%;"></span></td>
+              <td><span class="skeleton" style="width:50%;"></span></td>
+              <td><span class="skeleton" style="width:40%;"></span></td>
+              <td></td>
+            </tr>
+            <tr class="skeleton-row">
+              <td><span class="skeleton" style="width:55%;"></span></td>
+              <td><span class="skeleton" style="width:75%;"></span></td>
+              <td><span class="skeleton" style="width:70%;"></span></td>
+              <td><span class="skeleton" style="width:50%;"></span></td>
+              <td><span class="skeleton" style="width:50%;"></span></td>
+              <td><span class="skeleton" style="width:65%;"></span></td>
+              <td><span class="skeleton" style="width:60%;"></span></td>
+              <td><span class="skeleton" style="width:40%;"></span></td>
+              <td></td>
+            </tr>
+            <tr class="skeleton-row">
+              <td><span class="skeleton" style="width:72%;"></span></td>
+              <td><span class="skeleton" style="width:65%;"></span></td>
+              <td><span class="skeleton" style="width:78%;"></span></td>
+              <td><span class="skeleton" style="width:45%;"></span></td>
+              <td><span class="skeleton" style="width:45%;"></span></td>
+              <td><span class="skeleton" style="width:58%;"></span></td>
+              <td><span class="skeleton" style="width:52%;"></span></td>
+              <td><span class="skeleton" style="width:40%;"></span></td>
+              <td></td>
+            </tr>
+            <tr class="skeleton-row">
+              <td><span class="skeleton" style="width:60%;"></span></td>
+              <td><span class="skeleton" style="width:82%;"></span></td>
+              <td><span class="skeleton" style="width:68%;"></span></td>
+              <td><span class="skeleton" style="width:50%;"></span></td>
+              <td><span class="skeleton" style="width:50%;"></span></td>
+              <td><span class="skeleton" style="width:62%;"></span></td>
+              <td><span class="skeleton" style="width:48%;"></span></td>
+              <td><span class="skeleton" style="width:40%;"></span></td>
+              <td></td>
+            </tr>
           </tbody>
         </table>
         <p id="inventario-empty" class="empty-state text-muted" style="display:none; padding:32px; text-align:center;">No se encontraron productos con los filtros aplicados.</p>

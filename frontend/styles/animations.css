@@ -142,3 +142,8 @@
 .transition-opacity {
   transition: opacity 150ms ease;
 }
+
+@keyframes skeleton-shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}

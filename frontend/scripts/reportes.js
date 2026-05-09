@@ -97,6 +97,8 @@ async function loadReportes(filters = {}) {
     reportItems = res.data?.items || [];
     applyLocalFilters();
   } catch (err) {
+    renderTablaReportes([]);
+    renderSummaryCards([]);
     showToast(err.message, 'error');
   }
 }
@@ -130,6 +132,7 @@ function renderSummaryCards(items) {
   if (cards[0]) cards[0].textContent = String(stats.entrada);
   if (cards[1]) cards[1].textContent = String(stats.salida);
   if (cards[2]) cards[2].textContent = String(stats.merma);
+  document.querySelector('.summary-grid')?.removeAttribute('data-skeleton');
 }
 
 /** Pinta la tabla de movimientos. */

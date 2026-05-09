@@ -43,15 +43,14 @@ function restoreUIState() {
 /** Carga la lista de compras del backend y repinta la tabla. */
 async function loadCompras() {
   try {
-    const [res] = await Promise.all([
-      PurchaseService.getAll(),
-      populateFilterOptions([]),
-    ]);
+    const res = await PurchaseService.getAll();
     comprasItems = res.data?.items || [];
+    await populateFilterOptions(comprasItems);
+    restoreUIState();
     renderTablaCompras(comprasItems);
     syncTotals(comprasItems);
-    restoreUIState();
   } catch (err) {
+    renderTablaCompras([]);
     showToast(err.message, 'error');
   }
 }

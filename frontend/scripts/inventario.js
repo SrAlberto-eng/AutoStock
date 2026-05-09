@@ -116,6 +116,7 @@ async function loadProductos(filters = {}) {
     renderTablaProductos(items);
   } catch (err) {
     store.setState({ ui: { loading: false } });
+    renderTablaProductos([]);
     showToast(err.message, 'error');
   }
 }

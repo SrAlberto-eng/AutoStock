@@ -102,6 +102,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
+  // Mostrar/ocultar checkbox de inactivos antes del primer await para evitar
+  // layout shift cuando el label aparece después de cargar datos.
+  var inactiveLabel = document.getElementById('label-show-inactive-users');
+  if (inactiveLabel) {
+    inactiveLabel.style.display = isAdminUser() ? 'flex' : 'none';
+  }
+
   await ensureAreasLoaded();
   populateRoleOptions();
   populateAreaSelects();
@@ -231,6 +238,7 @@ async function loadUsuarios() {
     usuariosItems = items;
     renderTablaUsuarios(items);
   } catch (err) {
+    renderTablaUsuarios([]);
     showToast(err.message, 'error');
   }
 }

@@ -169,8 +169,13 @@ import { ProductService, MovementService, PurchaseService, CatalogService } from
       if (!prefetch) return;
 
       var _prefetchTimer = null;
+      var _prefetched = false;
       link.addEventListener('mouseenter', function () {
-        _prefetchTimer = setTimeout(prefetch, 100);
+        if (_prefetched) return;
+        _prefetchTimer = setTimeout(function () {
+          _prefetched = true;
+          prefetch();
+        }, 100);
       });
       link.addEventListener('mouseleave', function () {
         clearTimeout(_prefetchTimer);
