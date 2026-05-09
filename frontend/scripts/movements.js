@@ -402,6 +402,10 @@ async function confirmWaste() {
   }
 }
 
+function setPrefillProduct(id) {
+  _prefillProductId = id;
+}
+
 export {
   initModalEntry, initModalExit, initModalWaste,
   addEntryRow, removeEntryRow, confirmEntry,
@@ -410,7 +414,3 @@ export {
   resetEntryRows,
   setPrefillProduct,
 };
-
-function setPrefillProduct(id) {
-  _prefillProductId = id;
-}
