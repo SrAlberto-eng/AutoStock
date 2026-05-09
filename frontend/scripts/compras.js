@@ -43,11 +43,14 @@ function restoreUIState() {
 /** Carga la lista de compras del backend y repinta la tabla. */
 async function loadCompras() {
   try {
-    const res = await PurchaseService.getAll();
+    const [res] = await Promise.all([
+      PurchaseService.getAll(),
+      populateFilterOptions([]),
+    ]);
     comprasItems = res.data?.items || [];
-    await populateFilterOptions(comprasItems);
     renderTablaCompras(comprasItems);
     syncTotals(comprasItems);
+    restoreUIState();
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -58,9 +61,13 @@ async function populateFilterOptions(items) {
   const categoryFilter = document.getElementById('filter-category');
   const providerFilter  = document.getElementById('filter-provider');
 
+  const [categories, providers] = await Promise.all([
+    categoryFilter ? fetchCategoryNames(items) : Promise.resolve([]),
+    providerFilter  ? fetchProviderNames(items) : Promise.resolve([]),
+  ]);
+
   if (categoryFilter) {
     const selected = categoryFilter.value;
-    const categories = await fetchCategoryNames(items);
     categoryFilter.innerHTML = '<option value="">Todas las categorías</option>'
       + categories.sort().map(c =>
           `<option value="${slugify(c)}">${escapeHtml(c)}</option>`
@@ -70,7 +77,6 @@ async function populateFilterOptions(items) {
 
   if (providerFilter) {
     const selected = providerFilter.value;
-    const providers = await fetchProviderNames(items);
     providerFilter.innerHTML = '<option value="">Todos los proveedores</option>'
       + providers.sort().map(p =>
           `<option value="${slugify(p)}">${escapeHtml(p)}</option>`
@@ -327,7 +333,6 @@ function buildPrintMarkup(items, fechaIso, usuario) {
 
 document.addEventListener('DOMContentLoaded', async () => {
   initActiveNav();
-  restoreUIState();
 
   comprasFilterEngine = new FilterEngine({
     rowSelector: '#compras-tbody tr',

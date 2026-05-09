@@ -952,19 +952,18 @@ async function ensureCatalogsInStore() {
                 || (catalogs.areas      || []).length > 0
                 || (catalogs.unidades   || []).length > 0;
 
-  if (!hasAny) {
-    try {
-      const catalogsData = await CatalogService.getAllCatalogs();
-      store.setState({ catalogs: catalogsData });
-    } catch (_) {}
-  }
-
-  if (!(state.suppliers?.length)) {
-    try {
-      const res = await ProviderService.getAll();
-      if (res?.data?.items) store.setState({ suppliers: res.data.items });
-    } catch (_) {}
-  }
+  await Promise.all([
+    hasAny
+      ? Promise.resolve()
+      : CatalogService.getAllCatalogs()
+          .then(d => store.setState({ catalogs: d }))
+          .catch(() => {}),
+    state.suppliers?.length
+      ? Promise.resolve()
+      : ProviderService.getAll()
+          .then(r => { if (r?.data?.items) store.setState({ suppliers: r.data.items }); })
+          .catch(() => {}),
+  ]);
 }
 
 // ── Inicialización ────────────────────────────────────────────────────────
@@ -994,7 +993,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (btn) removeExitRow(Number(btn.closest('tr')?.dataset.rowId));
   });
 
-  await ensureCatalogsInStore();
+  const rawSaved = storageManager.loadUIState ? storageManager.loadUIState(INVENTARIO_VIEW_NAME) : null;
+  const initialFilters = {
+    categoria_id: rawSaved?.categoria_id || undefined,
+    area_id:      rawSaved?.area_id      || undefined,
+  };
+  await Promise.all([
+    ensureCatalogsInStore(),
+    loadProductos(initialFilters),
+  ]);
   populateFilterDropdowns();
   const savedState = restoreUIState();
 
@@ -1126,7 +1133,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.addEventListener('movements:changed', () => loadProductos(getApiFilters()));
   document.addEventListener('products:changed',  () => loadProductos(getApiFilters()));
 
-  await loadProductos(getApiFilters());
   applyFilters();
   saveUIState();
   initAddProductXmlImport();
