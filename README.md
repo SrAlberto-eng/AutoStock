@@ -309,7 +309,7 @@ Base URL: `http://127.0.0.1:8765`
 - CRUD principal de dominio, auth por rol, auditoria y compras en tiempo real.
 - Reportes de movimientos con filtros y exportacion CSV.
 - Toggle dark/light persistente en todas las vistas incluido login.
-- Frontend completamente migrado a ES Modules: cero globals en `window`, cero `onclick` en HTML para logica propia, un solo `<script type="module">` por vista.
+- Frontend completamente migrado a ES Modules: cero globals en `window`, cero `onclick` en HTML, un solo `<script type="module">` por vista.
 
 ### Pendiente
 

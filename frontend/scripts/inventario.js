@@ -21,6 +21,7 @@ import {
   addEntryRow, removeEntryRow, confirmEntry,
   addExitRow, removeExitRow, confirmExit,
   confirmWaste,
+  setPrefillProduct,
 } from './movements.js';
 
 const INVENTARIO_VIEW_NAME = 'inventario';
@@ -935,7 +936,7 @@ function toggleRowDropdown(event, btn) {
 
 function openMovementFromRow(productId, tipo) {
   closeAllRowDropdowns();
-  window._movementPrefill = productId;
+  setPrefillProduct(productId);
   const modalId = tipo === 'entrada' ? 'modal-entry'
                 : tipo === 'salida'  ? 'modal-exit'
                 : 'modal-waste';

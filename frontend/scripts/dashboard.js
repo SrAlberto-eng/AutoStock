@@ -19,6 +19,7 @@ import {
   addEntryRow, removeEntryRow, confirmEntry,
   addExitRow, removeExitRow, confirmExit,
   confirmWaste,
+  resetEntryRows,
 } from './movements.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -269,8 +270,7 @@ function fillEntryRowsFromXml(rows) {
   const tbody = document.getElementById('entry-rows');
   if (!tbody) return;
 
-  tbody.innerHTML = '';
-  _movEntryRowCount = 0;
+  resetEntryRows();
 
   rows.forEach((r) => {
     addEntryRow({

@@ -17,6 +17,7 @@ import { ProductService, MovementService, ProviderService, CatalogService } from
 var _movEntryRowCount = 1;
 var _movExitRowCount = 1;
 var _movWasteRowCount = 1;
+var _prefillProductId = null;
 
 // ── Ensure data loaded ────────────────────────────────────────────────────
 
@@ -127,9 +128,9 @@ function _onExitProductChange(e) {
 // ── Prefill helper ────────────────────────────────────────────────────────
 
 function _applyMovementPrefill(modal) {
-  if (!window._movementPrefill) return;
-  var productId = String(window._movementPrefill);
-  window._movementPrefill = null;
+  if (!_prefillProductId) return;
+  var productId = String(_prefillProductId);
+  _prefillProductId = null;
   var sel = modal.querySelector('select[name="product"]');
   if (sel) {
     sel.value = productId;
@@ -194,6 +195,14 @@ function _resetEntryRows() {
   addEntryRow();
   var fileName = document.getElementById('entry-xml-file-name');
   if (fileName) fileName.textContent = '';
+}
+
+// Exported reset: clears rows without adding a default row (used by XML import)
+function resetEntryRows() {
+  var tbody = document.getElementById('entry-rows');
+  if (!tbody) return;
+  _movEntryRowCount = 0;
+  tbody.innerHTML = '';
 }
 
 // ── Exit rows ─────────────────────────────────────────────────────────────
@@ -398,4 +407,10 @@ export {
   addEntryRow, removeEntryRow, confirmEntry,
   addExitRow, removeExitRow, confirmExit,
   confirmWaste,
+  resetEntryRows,
+  setPrefillProduct,
 };
+
+function setPrefillProduct(id) {
+  _prefillProductId = id;
+}
