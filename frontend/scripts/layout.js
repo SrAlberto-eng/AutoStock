@@ -14,6 +14,7 @@ import { showToast }         from './toast.js';
 import { storageManager }    from './storage-manager.js';
 import { initThemeSwitcher } from './theme-switcher.js';
 import { modalManager }      from './modals.js';
+import { ProductService, MovementService, PurchaseService, CatalogService } from './services.js';
 
 /* ─── Estado ─────────────────────────────────────────── */
   var sidebarCollapsed = false;
@@ -142,8 +143,40 @@ import { modalManager }      from './modals.js';
         }
       });
     });
+
+    _initNavPrefetch();
   }
 
+
+  /* ════════════════════════════════════════════════════════
+     NAV PREFETCH
+     Dispara requests silenciosos al hacer hover sobre los enlaces
+     del sidebar para que los datos lleguen antes de que el usuario
+     haga clic. Los errores se descartan sin ensuciar la consola.
+     ════════════════════════════════════════════════════════ */
+
+  const _PREFETCH_MAP = {
+    'dashboard.html':  () => MovementService.getDashboardSummary().catch(() => {}),
+    'inventario.html': () => { ProductService.getAll({}).catch(() => {}); CatalogService.getAllCatalogs().catch(() => {}); },
+    'compras.html':    () => { PurchaseService.getAll().catch(() => {}); CatalogService.getAllCatalogs().catch(() => {}); },
+    'catalogos.html':  () => CatalogService.getAllCatalogs().catch(() => {}),
+  };
+
+  function _initNavPrefetch() {
+    document.querySelectorAll('#app-sidebar .nav-item').forEach(function (link) {
+      var href = (link.getAttribute('href') || '').split('/').pop();
+      var prefetch = _PREFETCH_MAP[href];
+      if (!prefetch) return;
+
+      var _prefetchTimer = null;
+      link.addEventListener('mouseenter', function () {
+        _prefetchTimer = setTimeout(prefetch, 100);
+      });
+      link.addEventListener('mouseleave', function () {
+        clearTimeout(_prefetchTimer);
+      });
+    });
+  }
 
   /* ════════════════════════════════════════════════════════
      MOBILE MENU

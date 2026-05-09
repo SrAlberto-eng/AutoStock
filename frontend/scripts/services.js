@@ -1,5 +1,8 @@
 import { apiClient } from './api-client.js';
 
+const _CATALOG_CACHE_KEY = 'as_catalogs_cache';
+const _CATALOG_CACHE_TTL = 5 * 60 * 1000; // 5 minutos en ms
+
 class _ProductService {
   getAll(filters = {})    { return apiClient.get('/productos', { params: filters }); }
   getById(id)             { return apiClient.get('/productos/' + id); }
@@ -15,20 +18,40 @@ class _CatalogService {
   getAll(tipo) { return apiClient.get('/catalogos/' + tipo); }
 
   getAllCatalogs() {
+    try {
+      const raw = localStorage.getItem(_CATALOG_CACHE_KEY);
+      if (raw) {
+        const cached = JSON.parse(raw);
+        if (cached?.ts && (Date.now() - cached.ts) < _CATALOG_CACHE_TTL) {
+          return Promise.resolve(cached.data);
+        }
+      }
+    } catch (_) {}
+
     return Promise.all([
       this.getAll('categorias'),
       this.getAll('areas'),
       this.getAll('unidades'),
-    ]).then(([r0, r1, r2]) => ({
-      categorias: r0?.data?.items || [],
-      areas:      r1?.data?.items || [],
-      unidades:   r2?.data?.items || [],
-    }));
+    ]).then(([r0, r1, r2]) => {
+      const data = {
+        categorias: r0?.data?.items || [],
+        areas:      r1?.data?.items || [],
+        unidades:   r2?.data?.items || [],
+      };
+      try {
+        localStorage.setItem(_CATALOG_CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
+      } catch (_) {}
+      return data;
+    });
   }
 
-  create(tipo, data)        { return apiClient.post('/catalogos/' + tipo, data); }
-  update(tipo, id, data)    { return apiClient.patch('/catalogos/' + tipo + '/' + id, data); }
-  remove(tipo, id)          { return apiClient.delete('/catalogos/' + tipo + '/' + id); }
+  _invalidateCache() {
+    try { localStorage.removeItem(_CATALOG_CACHE_KEY); } catch (_) {}
+  }
+
+  create(tipo, data)     { this._invalidateCache(); return apiClient.post('/catalogos/' + tipo, data); }
+  update(tipo, id, data) { this._invalidateCache(); return apiClient.patch('/catalogos/' + tipo + '/' + id, data); }
+  remove(tipo, id)       { this._invalidateCache(); return apiClient.delete('/catalogos/' + tipo + '/' + id); }
 }
 
 class _MovementService {
