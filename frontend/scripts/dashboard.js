@@ -298,7 +298,10 @@ async function loadDashboard() {
 
 async function _loadSummaryCards() {
   try {
-    const res = await MovementService.getDashboardSummary();
+    const [res, productsRes] = await Promise.all([
+      MovementService.getDashboardSummary(),
+      ProductService.getAll({ limit: 200 }).catch(() => null),
+    ]);
     if (!res || !res.data) return;
     const d = res.data;
     const set = (id, val) => {
@@ -308,13 +311,8 @@ async function _loadSummaryCards() {
     set('stat-entradas-hoy', d.entradas_hoy);
     set('stat-salidas-hoy',  d.salidas_hoy);
 
-    try {
-      const productsRes = await ProductService.getAll({ limit: 200 });
-      const totalProducts = productsRes?.data?.total ?? productsRes?.data?.items?.length ?? '—';
-      set('stat-productos-total', totalProducts);
-    } catch (_) {
-      set('stat-productos-total', '—');
-    }
+    const totalProducts = productsRes?.data?.total ?? productsRes?.data?.items?.length ?? '—';
+    set('stat-productos-total', totalProducts);
 
 
 

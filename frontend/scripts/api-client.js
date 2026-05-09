@@ -7,7 +7,7 @@ import { showToast } from './toast.js';
 class ApiClient {
   constructor(config = {}) {
     this.baseURL    = config.baseURL    || 'http://127.0.0.1:8765/api';
-    this.timeout    = config.timeout    || 30000;
+    this.timeout    = config.timeout    || 10000;
     this.maxRetries = config.maxRetries !== undefined ? config.maxRetries : 1;
     /** @type {Map<string, Promise>} Deduplicación: key = "METHOD:path" */
     this.inFlight   = new Map();
