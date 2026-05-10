@@ -5,6 +5,23 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ---
 
+## [1.3.0] - 2026-05-09
+
+### Added
+- **Date range picker en Reportes:** reemplaza los dos `<input type="date">` sueltos por un componente integrado (`date-range-picker.js`) con botón-trigger, dropdown de presets y rango personalizado.
+  - Presets rápidos: Hoy, Ayer, Últimos 7 días, Últimos 30 días, Este mes, Mes anterior.
+  - Botón × en el trigger para limpiar el rango sin abrir el dropdown.
+  - Preset activo resaltado al reabrir el dropdown.
+  - Rango persistido en `localStorage` y restaurado al recargar.
+  - Componente reutilizable: acepta `containerId`, `onChange`, `initialFrom`, `initialTo`.
+
+### Fixed
+- Rango personalizado normalizaba silenciosamente `from`/`to` si el usuario los ingresaba invertidos (swap automático antes de disparar `onChange`).
+- `z-index` del dropdown reemplazado de valor hardcoded (`200`) por token `var(--z-dropdown)` para respetar la escala de capas del sistema.
+- Formato de fecha en el trigger mostraba "09-may" (guión de locale `es-MX`); corregido construyendo día y mes por separado para obtener "09 may".
+
+---
+
 ## [1.2.0] - 2026-05-08
 
 ### Changed
