@@ -67,7 +67,9 @@ function fmtShort(iso) {
   return `${day} ${month}`;
 }
 
-function buildHTML() {
+let DRP_INSTANCE_COUNTER = 0;
+
+function buildHTML({ inputFromId, inputToId }) {
   const presetBtns = PRESETS.map(p =>
     `<button type="button" class="drp-preset-btn" data-preset="${p.key}">${p.label()}</button>`
   ).join('');
@@ -94,12 +96,12 @@ function buildHTML() {
     <p class="drp-section-title">${MSG.REPORTS.DATE_CUSTOM}</p>
     <div class="drp-inputs">
       <div class="drp-field">
-        <label class="drp-field-label" for="drp-input-from">${MSG.REPORTS.DATE_FROM}</label>
-        <input type="date" id="drp-input-from" class="input drp-input-from" aria-label="${MSG.REPORTS.DATE_FROM}">
+        <label class="drp-field-label" for="${inputFromId}">${MSG.REPORTS.DATE_FROM}</label>
+        <input type="date" id="${inputFromId}" class="input drp-input-from" aria-label="${MSG.REPORTS.DATE_FROM}">
       </div>
       <div class="drp-field">
-        <label class="drp-field-label" for="drp-input-to">${MSG.REPORTS.DATE_TO}</label>
-        <input type="date" id="drp-input-to" class="input drp-input-to" aria-label="${MSG.REPORTS.DATE_TO}">
+        <label class="drp-field-label" for="${inputToId}">${MSG.REPORTS.DATE_TO}</label>
+        <input type="date" id="${inputToId}" class="input drp-input-to" aria-label="${MSG.REPORTS.DATE_TO}">
       </div>
     </div>
 
@@ -124,8 +126,10 @@ export class DateRangePicker {
     const container = document.getElementById(containerId);
     if (!container) return;
     this._container = container;
+    this._inputFromId = `${containerId}-drp-input-from-${++DRP_INSTANCE_COUNTER}`;
+    this._inputToId = `${containerId}-drp-input-to-${DRP_INSTANCE_COUNTER}`;
 
-    container.innerHTML = buildHTML();
+    container.innerHTML = buildHTML({ inputFromId: this._inputFromId, inputToId: this._inputToId });
     this._bindEvents();
     this._updateTriggerLabel();
     this._syncInputs();
@@ -192,8 +196,12 @@ export class DateRangePicker {
     });
 
     btnApply.addEventListener('click', () => {
-      this._from = inputFrom.value || null;
-      this._to   = inputTo.value   || null;
+      let from = inputFrom.value || null;
+      let to   = inputTo.value   || null;
+      if (from && to && from > to) [from, to] = [to, from];
+      this._from = from;
+      this._to   = to;
+      this._syncInputs();
       this._updatePresetHighlight();
       this._closeDropdown();
       this._updateTriggerLabel();
