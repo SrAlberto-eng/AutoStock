@@ -100,6 +100,20 @@ export const MSG = {
   REPORTS: {
     NO_DATA:     'No hay datos para exportar',
     CSV_SUCCESS: 'CSV exportado correctamente',
+
+    DATE_ALL:           'Todas las fechas',
+    DATE_PRESETS_TITLE: 'Accesos rápidos',
+    DATE_CUSTOM:        'Rango personalizado',
+    DATE_TODAY:         'Hoy',
+    DATE_YESTERDAY:     'Ayer',
+    DATE_LAST_7:        'Últimos 7 días',
+    DATE_LAST_30:       'Últimos 30 días',
+    DATE_THIS_MONTH:    'Este mes',
+    DATE_LAST_MONTH:    'Mes anterior',
+    DATE_FROM:          'Desde',
+    DATE_TO:            'Hasta',
+    DATE_APPLY:         'Aplicar',
+    DATE_CLEAR:         'Limpiar',
   },
 
   DASHBOARD: {

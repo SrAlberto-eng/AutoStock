@@ -11,11 +11,13 @@ import { escapeHtml }                    from './sanitizers.js';
 import { storageManager }                from './storage-manager.js';
 import { initFilterChips }               from './filter-chips.js';
 import { ReportService }                 from './services.js';
-import { initActiveNav } from './layout.js';
+import { initActiveNav }                 from './layout.js';
+import { DateRangePicker }               from './date-range-picker.js';
 
 const REPORTES_VIEW_NAME = 'reportes';
 
 let reportTypeChipController = null;
+let dateRangePicker           = null;
 /** Todos los movimientos cargados desde el backend. */
 let reportItems = [];
 /** Subconjunto visible tras aplicar el filtro de texto. */
@@ -25,23 +27,17 @@ let reportItemsVisible = [];
 
 function saveUIState() {
   if (typeof storageManager?.saveUIState !== 'function') return;
-  const selectedTypes = getSelectedTypes();
+  const { from, to } = dateRangePicker?.getValue() ?? { from: '', to: '' };
   storageManager.saveUIState(REPORTES_VIEW_NAME, {
-    tipos:        selectedTypes.join(','),
-    fecha_desde:  document.getElementById('date-from')?.value || '',
-    fecha_hasta:  document.getElementById('date-to')?.value   || '',
+    tipos:        getSelectedTypes().join(','),
+    fecha_desde:  from || '',
+    fecha_hasta:  to   || '',
   });
 }
 
 function restoreUIState() {
   if (typeof storageManager?.loadUIState !== 'function') return null;
-  const saved = storageManager.loadUIState(REPORTES_VIEW_NAME);
-  if (!saved) return null;
-  const dateFrom = document.getElementById('date-from');
-  const dateTo   = document.getElementById('date-to');
-  if (dateFrom && saved.fecha_desde != null) dateFrom.value = String(saved.fecha_desde);
-  if (dateTo   && saved.fecha_hasta != null) dateTo.value   = String(saved.fecha_hasta);
-  return saved;
+  return storageManager.loadUIState(REPORTES_VIEW_NAME) || null;
 }
 
 /** Restaura el estado activo de los chips de tipo guardados. */
@@ -73,13 +69,12 @@ function getSelectedTypes() {
 
 /** Construye el objeto de filtros para la llamada al backend. */
 function getActiveFilters() {
-  const dateFrom = document.getElementById('date-from');
-  const dateTo   = document.getElementById('date-to');
-  const types    = getSelectedTypes();
+  const { from, to } = dateRangePicker?.getValue() ?? {};
+  const types = getSelectedTypes();
 
   const filters = { skip: 0, limit: 50 };
-  if (dateFrom?.value) filters.fecha_desde = dateFrom.value;
-  if (dateTo?.value)   filters.fecha_hasta  = dateTo.value;
+  if (from) filters.fecha_desde = from;
+  if (to)   filters.fecha_hasta = to;
   if (types.length === 1) filters.tipo  = types[0];
   if (types.length > 1)  filters.tipos = types.join(',');
   return filters;
@@ -205,14 +200,17 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('products:changed',  reloadWithActiveFilters);
   document.addEventListener('movements:changed', reloadWithActiveFilters);
 
-  const savedState = restoreUIState();
+  const savedState  = restoreUIState();
   const searchInput = document.getElementById('reportes-search');
-  const dateFrom    = document.getElementById('date-from');
-  const dateTo      = document.getElementById('date-to');
 
-  searchInput?.addEventListener('input',  () => { applyLocalFilters(); saveUIState(); });
-  dateFrom   ?.addEventListener('change', () => { saveUIState(); reloadWithActiveFilters(); });
-  dateTo     ?.addEventListener('change', () => { saveUIState(); reloadWithActiveFilters(); });
+  dateRangePicker = new DateRangePicker({
+    containerId:   'date-range-picker-container',
+    initialFrom:   savedState?.fecha_desde || null,
+    initialTo:     savedState?.fecha_hasta || null,
+    onChange: () => { saveUIState(); reloadWithActiveFilters(); },
+  });
+
+  searchInput?.addEventListener('input', () => { applyLocalFilters(); saveUIState(); });
 
   document.getElementById('btn-export-csv')?.addEventListener('click', exportCSV);
 
