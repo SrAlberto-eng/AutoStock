@@ -1811,7 +1811,7 @@ hr, .separator {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  z-index: 200;
+  z-index: var(--z-dropdown);
   min-width: 300px;
   background: var(--background-panel);
   border: 1px solid var(--border);
