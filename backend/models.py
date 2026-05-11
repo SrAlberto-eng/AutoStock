@@ -231,8 +231,26 @@ auditoria = Table(
         name="ck_auditoria_accion",
     ),
     CheckConstraint(
-        "entidad IN ('usuarios','productos','movimientos','categorias','areas','unidades','proveedores','sesiones')",
+        "entidad IN ('usuarios','productos','movimientos','categorias','areas','unidades','proveedores','sesiones','facturas')",
         name="ck_auditoria_entidad",
     ),
     Index("idx_auditoria_entidad_entidad_id", "entidad", "entidad_id"),
+)
+
+
+factura = Table(
+    "facturas",
+    metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("id_factura", Text, nullable=False),
+    Column(
+        "proveedor_id",
+        Integer,
+        ForeignKey("proveedores.id", ondelete="RESTRICT"),
+        nullable=False,
+    ),
+    Column("fecha_emision", DateTime, nullable=False, default=datetime.utcnow),
+    Column("total", Float, nullable=False),
+    Column("id_movimiento", Integer, ForeignKey("movimientos.id", ondelete="RESTRIC"), nullable=False),
+    Column("xml_data", Text, nullable=False)
 )

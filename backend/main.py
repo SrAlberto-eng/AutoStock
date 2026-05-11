@@ -34,6 +34,7 @@ from routers import (
     purchases,
     proveedores,
     reports,
+    facturas,
 )
 from routers.movements import dashboard_router, importacion_router
 from tasks.backup import backup_database
@@ -249,6 +250,7 @@ app.include_router(importacion_router, prefix="/api/importacion", tags=["importa
 app.include_router(users.router, prefix="/api/usuarios", tags=["usuarios"])
 app.include_router(purchases.router, prefix="/api/compras", tags=["compras"])
 app.include_router(proveedores.router, prefix="/api/proveedores", tags=["proveedores"])
+app.include_router(facturas.router, prefix="/api/facturas", tags=["facturas"])
 app.include_router(reports.router, prefix="/api/reportes", tags=["reportes"])
 app.include_router(reports.admin_router, prefix="/api/admin", tags=["admin"])
 
