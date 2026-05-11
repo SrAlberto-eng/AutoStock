@@ -524,3 +524,35 @@ class MovementReportResponse(BaseModel):
     items: List[MovementReportItem]
     total: int
     pagina: int
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FACTURAS SCHEMAS
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class FacturaCreate(BaseModel):
+    """Request para POST /api/facturas"""
+
+    id_factura: str = Field(..., example="550e8400-e29b-41d4-a716-446655440000")
+    proveedor_id: int = Field(..., example=1)
+    fecha_emision: datetime
+    total: float = Field(..., ge=0)
+    id_movimiento: int = Field(..., example=10)
+    xml_data: str
+
+
+class FacturaResponse(BaseModel):
+    """Response para factura individual"""
+
+    id: int
+    id_factura: str
+    proveedor_id: int
+    proveedor_nombre: Optional[str] = None
+    fecha_emision: datetime
+    total: float
+    id_movimiento: int
+    xml_data: str
+
+    class Config:
+        from_attributes = True

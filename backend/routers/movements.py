@@ -65,6 +65,7 @@ async def create_movement(request_body: MovementCreateRequest, request: Request)
     movimientos_creados = 0
     total_cantidad = 0.0
     usuario_id = current_user_id(request)
+    last_movement_id = None
 
     try:
         with get_engine().begin() as conn:
@@ -113,6 +114,7 @@ async def create_movement(request_body: MovementCreateRequest, request: Request)
                     motivo=motivo,
                     area_id=request_body.area_id,
                 )
+                last_movement_id = movement_id
 
                 audit_repo.log_audit(
                     conn,
@@ -146,6 +148,7 @@ async def create_movement(request_body: MovementCreateRequest, request: Request)
             "cantidad_items": total_cantidad,
             "tipo": request_body.tipo,
             "fecha_sistema": now.isoformat(),
+            "first_movement_id": last_movement_id,
         },
         error=None,
         timestamp=now,

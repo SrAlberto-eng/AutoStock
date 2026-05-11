@@ -51,7 +51,7 @@ async def create_proveedor(request_body: ProveedorCreateRequest, request: Reques
     require_role(request, ["administrador", "gerente"])
     usuario_id = current_user_id(request)
     nombre = sanitize_string(request_body.nombre, 100, "nombre")
-    email = sanitize_string(request_body.email, 100, "email")
+    email = sanitize_string(request_body.email, 100, "email") if request_body.email else None
     telefono = sanitize_string(request_body.telefono, 100, "telefono") if request_body.telefono else None
 
     try:

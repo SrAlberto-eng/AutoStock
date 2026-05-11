@@ -87,6 +87,7 @@
             <button id="tab-unidades" class="catalogs-tab tab-trigger" role="tab" aria-selected="false" aria-controls="panel-unidades">Unidades</button>
             <button id="tab-areas" class="catalogs-tab tab-trigger" role="tab" aria-selected="false" aria-controls="panel-areas">Áreas</button>
             <button id="tab-proveedores" class="catalogs-tab tab-trigger" role="tab" aria-selected="false" aria-controls="panel-proveedores">Proveedores</button>
+            <button id="tab-facturas" class="catalogs-tab tab-trigger" role="tab" aria-selected="false" aria-controls="panel-facturas">Facturas</button>
           </div>
         </div>
 
@@ -179,6 +180,26 @@
                 <tr class="skeleton-row"><td><span class="skeleton" style="width:60%;"></span></td><td><span class="skeleton" style="width:80%;"></span></td><td><span class="skeleton" style="width:70%;"></span></td><td><span class="skeleton" style="width:50%;"></span></td><td><span class="skeleton" style="width:40%;"></span></td><td></td></tr>
                 <tr class="skeleton-row"><td><span class="skeleton" style="width:75%;"></span></td><td><span class="skeleton" style="width:68%;"></span></td><td><span class="skeleton" style="width:60%;"></span></td><td><span class="skeleton" style="width:50%;"></span></td><td><span class="skeleton" style="width:50%;"></span></td><td></td></tr>
               </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── Panel: Facturas ─────────────────────────── -->
+        <div id="panel-facturas" class="tab-panel" role="tabpanel" aria-labelledby="tab-facturas" aria-hidden="true" style="display:none;">
+          <div class="catalogs-panel-header">
+            <h3 class="text-base font-medium">Facturas</h3>
+          </div>
+          <div class="table-wrapper">
+            <table style="table-layout:fixed;">
+              <colgroup><col style="width:30%;"><col style="width:22%;"><col style="width:140px;"><col style="width:100px;"><col style="width:120px;"></colgroup>
+              <thead><tr>
+                <th class="text-left">UUID Factura</th>
+                <th class="text-left">Proveedor</th>
+                <th class="text-left">Fecha Emisión</th>
+                <th class="text-right">Total</th>
+                <th class="text-center">Movimiento ID</th>
+              </tr></thead>
+              <tbody id="facturas-tbody"></tbody>
             </table>
           </div>
         </div>
