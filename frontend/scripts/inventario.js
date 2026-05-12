@@ -375,7 +375,14 @@ async function toggleProductFromDetail() {
 function createAddProductRowHTML(id, data = {}) {
   return `
     <tr data-row-id="${id}">
-      <td><input type="text" name="name" class="input" placeholder="Nombre..." aria-label="Nombre del producto" value="${escapeHtml(data.name || '')}"></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <input type="text" name="name" class="input" style="flex:1;min-width:0;" placeholder="Nombre..." aria-label="Nombre del producto" value="${escapeHtml(data.name || '')}">
+          <span class="row-name-hint" style="display:none;flex-shrink:0;color:var(--status-danger);cursor:default;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="pointer-events:none;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+          </span>
+        </div>
+      </td>
       <td>${buildCatalogSelectHTML('category', data.categoryId,  'Categoría')}</td>
       <td>${buildCatalogSelectHTML('area',     data.areaId,      'Área')}</td>
       <td>${buildCatalogSelectHTML('unit',     data.unitId,      'Unidad de medida')}</td>
@@ -384,14 +391,26 @@ function createAddProductRowHTML(id, data = {}) {
       <td><input type="number" name="min_stock" min="0" class="input" placeholder="0" aria-label="Mínimo" value="${escapeHtml(data.minimo  || '')}"></td>
       <td><input type="number" name="max_stock" min="0" class="input" placeholder="0" aria-label="Máximo" value="${escapeHtml(data.maximo  || '')}"></td>
       <td style="white-space:nowrap;">
-        <button type="button" class="btn btn-ghost btn-icon" data-action="move-to-existing"
-            title="Mover a existentes" aria-label="Mover a existentes" style="display:none;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-        </button>
-        <button type="button" class="btn btn-ghost btn-icon" data-action="remove-new-row"
-            aria-label="Eliminar fila">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
+        <div class="dropdown-wrapper">
+          <button type="button" class="btn btn-ghost btn-icon" data-action="toggle-dropdown"
+              aria-haspopup="true" aria-expanded="false" aria-label="Acciones de fila">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>
+          </button>
+          <div class="dropdown-menu dropdown-menu--compact hidden" role="menu">
+            <button type="button" class="dropdown-item" role="menuitem" data-action="move-to-existing" disabled style="opacity:0.4;pointer-events:none;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+              Mover a existentes
+            </button>
+            <button type="button" class="dropdown-item" role="menuitem" data-action="clear-new-row" disabled style="opacity:0.4;pointer-events:none;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              Limpiar fila
+            </button>
+            <button type="button" class="dropdown-item" role="menuitem" data-action="remove-new-row">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              Eliminar fila
+            </button>
+          </div>
+        </div>
       </td>
     </tr>`;
 }
@@ -409,19 +428,41 @@ function addProductRow(prefill) {
   tbody.appendChild(tr);
   _attachNameDebounce(tr);
 
-  const nameInput = tr.querySelector('input[name="name"]');
-  const moveBtn   = tr.querySelector('[data-action="move-to-existing"]');
-  if (moveBtn && nameInput?.value.trim()) moveBtn.style.display = '';
+  if (prefill?.name) {
+    const clearItem = tr.querySelector('[data-action="clear-new-row"]');
+    if (clearItem) { clearItem.disabled = false; clearItem.style.opacity = ''; clearItem.style.pointerEvents = ''; }
+  }
 
   updateNewRowsButtonStates();
 }
 
 function removeAddProductRow(id) {
-  const tbody = document.getElementById('add-product-rows');
-  if (!tbody || tbody.rows.length <= 1) return;
+  const tbody         = document.getElementById('add-product-rows');
+  const existingTbody = document.getElementById('existing-product-rows');
+  const hasExisting   = (existingTbody?.rows.length ?? 0) > 0;
+  if (!tbody || (!hasExisting && tbody.rows.length <= 1)) return;
 
   tbody.querySelector(`[data-row-id="${id}"]`)?.remove();
   updateNewRowsButtonStates();
+}
+
+function clearAddProductRow(id) {
+  const tbody = document.getElementById('add-product-rows');
+  const row   = tbody?.querySelector(`[data-row-id="${id}"]`);
+  if (!row) return;
+  row.querySelectorAll('input').forEach(inp => {
+    inp.value = '';
+    inp.classList.remove('input-warning', 'input-error');
+    inp.title = '';
+  });
+  row.querySelectorAll('select').forEach(sel => sel.value = '');
+  delete row.dataset.existingProductId;
+  const moveItem  = row.querySelector('[data-action="move-to-existing"]');
+  const clearItem = row.querySelector('[data-action="clear-new-row"]');
+  const hint      = row.querySelector('.row-name-hint');
+  if (moveItem)  { moveItem.disabled  = true;  moveItem.style.opacity  = '0.4'; moveItem.style.pointerEvents  = 'none'; }
+  if (clearItem) { clearItem.disabled = true;  clearItem.style.opacity = '0.4'; clearItem.style.pointerEvents = 'none'; }
+  if (hint) hint.style.display = 'none';
 }
 
 /** Vigila el campo nombre con debounce y muestra aviso si el producto ya existe. */
@@ -430,29 +471,59 @@ function _attachNameDebounce(rowEl) {
   if (!nameInput) return;
 
   const rowId = rowEl.getAttribute('data-row-id');
+
+  const _setMoveItem = (enabled) => {
+    const moveItem = rowEl.querySelector('[data-action="move-to-existing"]');
+    const hint     = rowEl.querySelector('.row-name-hint');
+    if (moveItem) { moveItem.disabled = !enabled; moveItem.style.opacity = enabled ? '' : '0.4'; moveItem.style.pointerEvents = enabled ? '' : 'none'; }
+    if (hint) hint.style.display = enabled ? 'inline-flex' : 'none';
+  };
+
+  const _setClearItem = (enabled) => {
+    const clearItem = rowEl.querySelector('[data-action="clear-new-row"]');
+    if (clearItem) { clearItem.disabled = !enabled; clearItem.style.opacity = enabled ? '' : '0.4'; clearItem.style.pointerEvents = enabled ? '' : 'none'; }
+  };
+
   nameInput.addEventListener('input', () => {
     clearTimeout(_nameCheckTimers[rowId]);
-    const moveBtn = rowEl.querySelector('[data-action="move-to-existing"]');
-    const name    = nameInput.value.trim();
-    if (moveBtn) moveBtn.style.display = name ? '' : 'none';
-    if (!name) return;
+    const name = nameInput.value.trim();
+
+    _setClearItem(!!name);
+
+    if (!name) {
+      delete rowEl.dataset.existingProductId;
+      nameInput.classList.remove('input-warning');
+      _setMoveItem(false);
+      return;
+    }
 
     _nameCheckTimers[rowId] = setTimeout(async () => {
       try {
-        const res = await ProductService.checkName(name);
-        nameInput.classList.toggle('input-warning', !!(res?.data?.exists));
-        nameInput.title = res?.data?.exists ? 'Producto ya registrado' : '';
+        const res    = await ProductService.checkName(name);
+        const exists = !!(res?.data?.exists);
+        nameInput.classList.toggle('input-warning', exists);
+        if (exists) {
+          rowEl.dataset.existingProductId = res.data.id;
+        } else {
+          delete rowEl.dataset.existingProductId;
+        }
+        _setMoveItem(exists);
       } catch (_) {}
     }, 300);
   });
 }
 
 function updateNewRowsButtonStates() {
-  const rows   = document.querySelectorAll('#add-product-rows tr');
-  const single = rows.length <= 1;
+  const rows          = document.querySelectorAll('#add-product-rows tr');
+  const existingTbody = document.getElementById('existing-product-rows');
+  const canDelete     = rows.length > 1 || (existingTbody?.rows.length ?? 0) > 0;
   rows.forEach(row => {
-    const removeBtn = row.querySelector('[data-action="remove-new-row"]');
-    if (removeBtn) removeBtn.style.display = single ? 'none' : '';
+    const removeItem = row.querySelector('[data-action="remove-new-row"]');
+    if (removeItem) {
+      removeItem.disabled         = !canDelete;
+      removeItem.style.opacity    = canDelete ? '' : '0.4';
+      removeItem.style.pointerEvents = canDelete ? '' : 'none';
+    }
   });
 }
 
@@ -578,37 +649,27 @@ function onExistingProductChange(selectEl, rowId) {
 
 // ── Mover filas entre secciones ───────────────────────────────────────────
 
-async function moveNewToExisting(rowId) {
+function moveNewToExisting(rowId) {
   const tbody = document.getElementById('add-product-rows');
   const row   = tbody?.querySelector(`[data-row-id="${rowId}"]`);
   if (!row) return;
 
-  const nameInput      = row.querySelector('input[name="name"]');
+  const productId = row.dataset.existingProductId ? Number(row.dataset.existingProductId) : null;
+  if (!productId) {
+    showToast('El producto no está registrado en el inventario', 'error');
+    return;
+  }
+
   const stockInput     = row.querySelector('input[name="stock"]');
   const supplierSelect = row.querySelector('select[name="supplier"]');
-
-  const name       = (nameInput?.value || '').trim();
-  const cantidad   = parseFloat(stockInput?.value) || 0;
-  const supplierId = supplierSelect?.value ? Number(supplierSelect.value) : null;
-
-  let productId = null;
-  if (name) {
-    try {
-      const res = await ProductService.checkName(name);
-      productId = res?.data?.id ?? null;
-    } catch (_) {}
-  }
+  const cantidad       = parseFloat(stockInput?.value) || 0;
+  const supplierId     = supplierSelect?.value ? Number(supplierSelect.value) : null;
 
   addExistingProductRow(productId, cantidad, supplierId);
 
   const allNewRows = document.querySelectorAll('#add-product-rows tr');
   if (allNewRows.length <= 1) {
-    if (nameInput) nameInput.value = '';
-    row.querySelector('select[name="category"]').value = '';
-    row.querySelector('select[name="area"]').value     = '';
-    row.querySelector('select[name="unit"]').value     = '';
-    const moveBtn = row.querySelector('[data-action="move-to-existing"]');
-    if (moveBtn) moveBtn.style.display = 'none';
+    clearAddProductRow(rowId);
   } else {
     removeAddProductRow(rowId);
   }
@@ -721,15 +782,33 @@ async function saveNewProducts() {
   if (!payloadItems.length && !movementItems.length) { showToast(MSG.INVENTORY.NO_VALID_PRODUCTS,    'error'); return; }
 
   try {
-    let creados = 0, omitidos = 0;
+    let creados = 0, omitidos = 0, firstMovId = null, allMovIds = [];
     if (payloadItems.length) {
       const res = await ProductService.createBulk(payloadItems);
-      creados   = Number(res?.data?.creados  || 0);
-      omitidos  = Number(res?.data?.omitidos || 0);
+      creados    = Number(res?.data?.creados  || 0);
+      omitidos   = Number(res?.data?.omitidos || 0);
+      firstMovId = res?.data?.first_movement_id ?? null;
+      allMovIds  = Array.isArray(res?.data?.movement_ids) ? res.data.movement_ids : (firstMovId ? [firstMovId] : []);
     }
     if (movementItems.length) {
-      await MovementService.create('entrada', movementItems, { motivo: 'Carga desde inventario' });
+      const movRes = await MovementService.create('entrada', movementItems, { motivo: 'Carga desde inventario' });
+      firstMovId   = firstMovId ?? (movRes?.data?.first_movement_id ?? null);
     }
+
+    if (_pendingFacturasData.length && firstMovId) {
+      for (const factura of _pendingFacturasData) {
+        if (factura.proveedor_id) {
+          try {
+            const payload = { ...factura, id_movimiento: firstMovId, movimiento_ids: allMovIds };
+            delete payload.supplierName;
+            await FacturaService.create(payload);
+          } catch (e) {
+            if (e?.status !== 409) console.warn('[factura]', e?.message, factura.id_factura);
+          }
+        }
+      }
+    }
+    _pendingFacturasData = [];
 
     modalManager.close('modal-add-product');
     await loadProductos();
@@ -749,8 +828,27 @@ async function saveNewProducts() {
 
 // ── Importación XML ───────────────────────────────────────────────────────
 
-function _openXmlSupplierModal(supplierName, rows) {
-  _pendingXmlImport = { rows, supplierName };
+function _clearXmlFileName() {
+  // no-op: filename display replaced by chips list
+}
+
+function _addXmlFileChip(name) {
+  const list = document.getElementById('ap-xml-files-list');
+  if (!list) return;
+  const chip = document.createElement('span');
+  chip.className = 'xml-file-chip';
+  chip.title = name;
+  chip.textContent = '• ' + name;
+  list.appendChild(chip);
+}
+
+function _openXmlSupplierModal(supplierName, rows, facturaEntry = null) {
+  // If there's already a pending import waiting on the modal, flush its rows first
+  if (_pendingXmlImport?.rows?.length) {
+    if (_pendingXmlImport.facturaEntry) _pendingFacturasData.push(_pendingXmlImport.facturaEntry);
+    fillAddProductRowsFromXml(_pendingXmlImport.rows);
+  }
+  _pendingXmlImport = { rows, supplierName, facturaEntry };
   const nameInput  = document.getElementById('xml-proveedor-nombre');
   const emailInput = document.getElementById('xml-proveedor-email');
   const telInput   = document.getElementById('xml-proveedor-telefono');
@@ -995,6 +1093,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initActiveNav();
 
   // Registrar callbacks de init de modales de movimientos
+  modalManager.registerInit('modal-add-product', initModalAddProduct);
   modalManager.registerInit('modal-entry', initModalEntry);
   modalManager.registerInit('modal-exit',  initModalExit);
   modalManager.registerInit('modal-waste', initModalWaste);
@@ -1045,6 +1144,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     saveUIState();
     loadProductos(getApiFilters());
   });
+  document.getElementById('filter-supplier')?.addEventListener('change', () => {
+    applyFilters();
+    saveUIState();
+  });
   document.getElementById('chk-show-inactive-products')?.addEventListener('change', () => {
     loadProductos(getApiFilters());
   });
@@ -1074,6 +1177,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     getCriteria:  () => ({
       category:        (document.getElementById('filter-category')?.value  || '').toLowerCase(),
       area:            (document.getElementById('filter-area')?.value      || '').toLowerCase(),
+      supplier:        (document.getElementById('filter-supplier')?.value  || '').toLowerCase(),
       selectedStatuses: inventoryChipController
         ? inventoryChipController.getSelectedValues()
         : Array.from(document.querySelectorAll('.filter-chip.active'))
@@ -1083,11 +1187,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     mapRow:       row => ({
       rowCategory: (row.dataset.category || '').toLowerCase(),
       rowArea:     (row.dataset.area     || '').toLowerCase(),
+      rowSupplier: (row.dataset.supplier || '').toLowerCase(),
       rowStatus:   (row.dataset.status   || '').toLowerCase(),
     }),
     predicates: [
       (c, r) => !c.category         || r.rowCategory === c.category,
       (c, r) => !c.area             || r.rowArea     === c.area,
+      (c, r) => !c.supplier         || r.rowSupplier === c.supplier,
       (c, r) => !c.selectedStatuses.length || c.selectedStatuses.includes(r.rowStatus),
     ],
     setEmptyState: result => {
@@ -1110,9 +1216,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Event delegation: filas nuevas
   document.getElementById('add-product-rows')?.addEventListener('click', e => {
     const btn = e.target.closest('[data-action]');
-    if (!btn) return;
+    if (!btn || btn.disabled) return;
     const rowId = Number(btn.closest('tr')?.dataset.rowId);
+    if (btn.dataset.action === 'toggle-dropdown')  { toggleRowDropdown(e, btn); return; }
+    closeAllRowDropdowns();
     if (btn.dataset.action === 'move-to-existing') moveNewToExisting(rowId);
+    if (btn.dataset.action === 'clear-new-row')    clearAddProductRow(rowId);
     if (btn.dataset.action === 'remove-new-row')   removeAddProductRow(rowId);
   });
 

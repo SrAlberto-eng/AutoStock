@@ -8,7 +8,7 @@ import { activoBadge } from './ui-helpers.js';
 import { showToast }   from './toast.js';
 import { store }       from './store.js';
 import { escapeHtml }  from './sanitizers.js';
-import { CatalogService, ProviderService } from './services.js';
+import { CatalogService, ProviderService, FacturaService } from './services.js';
 import { initActiveNav } from './layout.js';
 import { modalManager } from './modals.js';
 
@@ -18,6 +18,7 @@ let pendingDeleteRow = null;
 let pendingToggleId  = null;
 /** Cache local de proveedores para edición sin viaje al servidor. */
 let proveedoresData  = [];
+let facturasData     = [];
 
 // ═══════════════════════════════════════════════════════════════════════════
 // UTILIDADES INTERNAS
@@ -263,6 +264,121 @@ async function loadProveedores() {
   }
 }
 
+// ── Facturas ──────────────────────────────────────────────────────────────
+
+async function loadFacturas() {
+  try {
+    const res = await FacturaService.getAll();
+    facturasData = Array.isArray(res?.data) ? res.data : [];
+    renderFacturas(facturasData);
+  } catch (err) {
+    renderFacturas([]);
+    showToast(err?.message || 'Error cargando facturas', 'error');
+  }
+}
+
+async function openFacturaDetail(id) {
+  const body = document.getElementById('factura-detail-body');
+  if (!body) return;
+  body.innerHTML = '<p class="text-muted" style="text-align:center;padding:24px 0;">Cargando...</p>';
+  modalManager.open('modal-factura-detail');
+
+  try {
+    const res = await FacturaService.getById(id);
+    const d   = res?.data;
+    if (!d) { body.innerHTML = '<p class="text-muted">No se encontró la factura.</p>'; return; }
+
+    const fmt = (v) => v ? String(v).slice(0, 19).replace('T', ' ') : '—';
+
+    const productosRows = (d.productos || []).length
+      ? (d.productos || []).map(p => `
+          <tr>
+            <td style="padding:6px 8px;font-size:0.8125rem;">${escapeHtml(p.producto_nombre)}</td>
+            <td style="padding:6px 8px;font-size:0.8125rem;text-align:right;">${escapeHtml(String(p.cantidad))}</td>
+          </tr>`).join('')
+      : '<tr><td colspan="2" class="text-muted" style="padding:12px 8px;text-align:center;">Sin productos</td></tr>';
+
+    body.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;">
+        <!-- Columna izquierda: info factura + movimiento -->
+        <div style="display:grid;gap:20px;">
+          <section>
+            <h3 class="text-sm font-medium" style="margin-bottom:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Factura</h3>
+            <dl style="display:grid;grid-template-columns:120px 1fr;gap:6px 12px;font-size:0.875rem;">
+              <dt class="text-muted">UUID</dt>
+              <dd style="font-family:monospace;font-size:0.7rem;word-break:break-all;">${escapeHtml(d.id_factura)}</dd>
+              <dt class="text-muted">Proveedor</dt>
+              <dd>${escapeHtml(d.proveedor_nombre || '—')}</dd>
+              <dt class="text-muted">Fecha emisión</dt>
+              <dd>${escapeHtml(fmt(d.fecha_emision))}</dd>
+              <dt class="text-muted">Total</dt>
+              <dd>$${escapeHtml(Number(d.total).toFixed(2))}</dd>
+            </dl>
+          </section>
+          <hr style="border:none;border-top:1px solid var(--border-color);">
+          <section>
+            <h3 class="text-sm font-medium" style="margin-bottom:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Movimiento</h3>
+            <dl style="display:grid;grid-template-columns:120px 1fr;gap:6px 12px;font-size:0.875rem;">
+              <dt class="text-muted">ID</dt>
+              <dd>${escapeHtml(String(d.id_movimiento))}</dd>
+              <dt class="text-muted">Tipo</dt>
+              <dd>${escapeHtml(d.mov_tipo || '—')}</dd>
+              <dt class="text-muted">Fecha</dt>
+              <dd>${escapeHtml(fmt(d.mov_fecha))}</dd>
+              <dt class="text-muted">Motivo</dt>
+              <dd>${escapeHtml(d.mov_motivo || '—')}</dd>
+              <dt class="text-muted">Registrado por</dt>
+              <dd>${escapeHtml(d.usuario_nombre || '—')}</dd>
+            </dl>
+          </section>
+        </div>
+
+        <!-- Columna derecha: productos -->
+        <div>
+          <h3 class="text-sm font-medium" style="margin-bottom:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;">Productos introducidos</h3>
+          <div class="table-wrapper" style="max-height:340px;overflow-y:auto;">
+            <table style="width:100%;">
+              <thead>
+                <tr>
+                  <th style="padding:6px 8px;font-size:0.75rem;text-align:left;">Producto</th>
+                  <th style="padding:6px 8px;font-size:0.75rem;text-align:right;">Cantidad</th>
+                </tr>
+              </thead>
+              <tbody>${productosRows}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>`;
+  } catch (err) {
+    body.innerHTML = `<p class="text-muted">Error al cargar detalle: ${escapeHtml(err?.message || String(err))}</p>`;
+  }
+}
+
+function renderFacturas(items) {
+  const tbody = document.getElementById('facturas-tbody');
+  if (!tbody) return;
+  const safeItems = Array.isArray(items) ? items.filter(i => i && typeof i === 'object') : [];
+  if (!safeItems.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center; padding:32px 0;">No hay facturas registradas</td></tr>';
+    return;
+  }
+  tbody.innerHTML = safeItems.map(item => {
+    const id        = escapeHtml(String(item.id || ''));
+    const idFactura = escapeHtml(item.id_factura || '');
+    const proveedor = escapeHtml(item.proveedor_nombre || String(item.proveedor_id || ''));
+    const fecha     = escapeHtml(item.fecha_emision ? String(item.fecha_emision).slice(0, 10) : '');
+    const total     = escapeHtml(item.total != null ? Number(item.total).toFixed(2) : '');
+    const movId     = escapeHtml(String(item.id_movimiento || ''));
+    return `<tr data-id="${id}" style="cursor:pointer;" title="Ver detalle">
+      <td class="text-left" style="font-size:0.75rem;font-family:monospace;">${idFactura}</td>
+      <td class="text-left">${proveedor}</td>
+      <td class="text-left">${fecha}</td>
+      <td class="text-right">$${total}</td>
+      <td class="text-center">${movId}</td>
+    </tr>`;
+  }).join('');
+}
+
 /** SVG ojo (activo) */
 const ICON_EYE     = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
 /** SVG ojo tachado (inactivo) */
@@ -408,31 +524,35 @@ document.addEventListener('DOMContentLoaded', () => {
   initActiveNav();
 
   // ── Tabs ─────────────────────────────────────────────────────────────
+  const activateTab = (targetId) => {
+    document.querySelectorAll('.tab-trigger').forEach(t => {
+      t.classList.remove('active');
+      t.setAttribute('aria-selected', 'false');
+    });
+    document.querySelectorAll('.tab-panel').forEach(p => {
+      p.classList.remove('active');
+      p.style.display = 'none';
+      p.setAttribute('aria-hidden', 'true');
+    });
+
+    const btn = document.querySelector(`.tab-trigger[aria-controls="${targetId}"]`);
+    if (btn) { btn.classList.add('active'); btn.setAttribute('aria-selected', 'true'); }
+    const panel = document.getElementById(targetId);
+    if (panel) { panel.classList.add('active'); panel.style.display = 'block'; panel.setAttribute('aria-hidden', 'false'); }
+  };
+
   document.querySelectorAll('.tab-trigger').forEach(btn => {
     btn.addEventListener('click', () => {
       const targetId = btn.getAttribute('aria-controls');
       if (!targetId) return;
-
-      document.querySelectorAll('.tab-trigger').forEach(t => {
-        t.classList.remove('active');
-        t.setAttribute('aria-selected', 'false');
-      });
-      document.querySelectorAll('.tab-panel').forEach(p => {
-        p.classList.remove('active');
-        p.style.display = 'none';
-        p.setAttribute('aria-hidden', 'true');
-      });
-
-      btn.classList.add('active');
-      btn.setAttribute('aria-selected', 'true');
-      const panel = document.getElementById(targetId);
-      if (panel) {
-        panel.classList.add('active');
-        panel.style.display = 'block';
-        panel.setAttribute('aria-hidden', 'false');
-      }
+      sessionStorage.setItem('catalogos_active_tab', targetId);
+      activateTab(targetId);
     });
   });
+
+  // Restaurar tab al cargar
+  const savedTab = sessionStorage.getItem('catalogos_active_tab');
+  if (savedTab && document.getElementById(savedTab)) activateTab(savedTab);
 
   // ── Botones de cabecera de panel (Agregar) ────────────────────────────
   document.getElementById('btn-add-categoria') ?.addEventListener('click', () => openCatalogModal('categoria'));
@@ -472,6 +592,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btn.dataset.action === 'toggle-prov') confirmToggle(id);
   });
 
+  // ── Click en fila de facturas → detalle ───────────────────────────────
+  document.getElementById('facturas-tbody')?.addEventListener('click', e => {
+    const row = e.target.closest('tr[data-id]');
+    if (row) openFacturaDetail(Number(row.dataset.id));
+  });
+
   loadCatalogos();
   loadProveedores();
+  loadFacturas();
 });
