@@ -12,7 +12,7 @@ import { storageManager }                           from './storage-manager.js';
 import { FilterEngine }                             from './filter-engine.js';
 import { initFilterChips }                          from './filter-chips.js';
 import { escapeHtml }                               from './sanitizers.js';
-import { ProductService, CatalogService, MovementService, ProviderService } from './services.js';
+import { ProductService, CatalogService, MovementService, ProviderService, FacturaService } from './services.js';
 import { readXmlFile, xmlAttrOrChild, initXmlDropzone } from './xml-importer.js';
 import { initActiveNav } from './layout.js';
 import { modalManager } from './modals.js';
@@ -33,6 +33,8 @@ let addExistingProductRowCount   = 0;
 let currentDetailProductId       = null;
 let currentDetailProductActivo   = true;
 let _pendingXmlImport            = null;
+let _pendingFacturasData         = [];
+let _sessionImportedFacturaIds   = new Set();
 const _nameCheckTimers           = {};
 let   _searchDebounceTimer       = null;
 
@@ -47,9 +49,10 @@ function saveUIState() {
         .filter(s => s !== '');
 
   storageManager.saveUIState(INVENTARIO_VIEW_NAME, {
-    nombre:       document.getElementById('inventario-search')?.value || '',
-    categoria_id: document.getElementById('filter-category')?.value  || '',
-    area_id:      document.getElementById('filter-area')?.value      || '',
+    nombre:       document.getElementById('inventario-search')?.value  || '',
+    categoria_id: document.getElementById('filter-category')?.value   || '',
+    area_id:      document.getElementById('filter-area')?.value       || '',
+    proveedor_id: document.getElementById('filter-supplier')?.value   || '',
     estado:       selectedStatuses.join(','),
   });
 }
@@ -62,10 +65,12 @@ function restoreUIState() {
   const searchInput     = document.getElementById('inventario-search');
   const categoryFilter  = document.getElementById('filter-category');
   const areaFilter      = document.getElementById('filter-area');
+  const supplierFilter  = document.getElementById('filter-supplier');
 
   if (searchInput    && saved.nombre       != null) searchInput.value    = String(saved.nombre);
   if (categoryFilter && saved.categoria_id != null) categoryFilter.value = String(saved.categoria_id);
   if (areaFilter     && saved.area_id      != null) areaFilter.value     = String(saved.area_id);
+  if (supplierFilter && saved.proveedor_id != null) supplierFilter.value = String(saved.proveedor_id);
 
   return saved;
 }
@@ -158,9 +163,11 @@ function buildCatalogSelectHTML(type, selectedValue, ariaLabel) {
 
 /** Rellena los selects de filtro de la barra superior con datos del store. */
 function populateFilterDropdowns() {
-  const catalogs       = store.getState().catalogs || {};
-  const categoryFilter = document.getElementById('filter-category');
-  const areaFilter     = document.getElementById('filter-area');
+  const catalogs        = store.getState().catalogs  || {};
+  const suppliers       = store.getState().suppliers || [];
+  const categoryFilter  = document.getElementById('filter-category');
+  const areaFilter      = document.getElementById('filter-area');
+  const supplierFilter  = document.getElementById('filter-supplier');
 
   if (categoryFilter) {
     categoryFilter.innerHTML = '<option value="">Todas las categorías</option>'
@@ -172,6 +179,12 @@ function populateFilterDropdowns() {
     areaFilter.innerHTML = '<option value="">Todas las áreas</option>'
       + (catalogs.areas || []).map(i =>
           `<option value="${escapeHtml(String(i.id))}">${escapeHtml(i.nombre)}</option>`
+        ).join('');
+  }
+  if (supplierFilter) {
+    supplierFilter.innerHTML = '<option value="">Todos los proveedores</option>'
+      + suppliers.map(s =>
+          `<option value="${escapeHtml(String(s.id))}">${escapeHtml(s.nombre)}</option>`
         ).join('');
   }
 }
@@ -211,6 +224,7 @@ function renderTablaProductos(items) {
         data-name="${escapeHtml(item.nombre)}"
         data-category="${escapeHtml(String(item.categoria_id))}"
         data-area="${escapeHtml(String(item.area_id))}"
+        data-supplier="${escapeHtml(String(item.proveedor_id ?? ''))}"
         data-status="${escapeHtml(statusKey)}">
       <td>${escapeHtml(item.nombre)}</td>
       <td>${escapeHtml(categoriaNombre)}</td>
