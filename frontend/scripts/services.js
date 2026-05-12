@@ -96,6 +96,13 @@ class _ReportService {
   }
 }
 
+class _FacturaService {
+  check(idFactura) { return apiClient.get('/facturas/check/' + encodeURIComponent(idFactura)); }
+  create(data)     { return apiClient.post('/facturas', data); }
+  getAll()         { return apiClient.get('/facturas'); }
+  getById(id)      { return apiClient.get('/facturas/' + id); }
+}
+
 export const ProductService  = new _ProductService();
 export const CatalogService  = new _CatalogService();
 export const MovementService = new _MovementService();
@@ -103,3 +110,4 @@ export const UserService     = new _UserService();
 export const ProviderService = new _ProviderService();
 export const PurchaseService = new _PurchaseService();
 export const ReportService   = new _ReportService();
+export const FacturaService  = new _FacturaService();
