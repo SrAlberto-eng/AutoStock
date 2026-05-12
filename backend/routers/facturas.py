@@ -35,8 +35,9 @@ async def list_facturas(request: Request):
 
 
 @router.get("/check/{id_factura}", response_model=ApiResponse[dict])
-async def check_factura_exists(id_factura: str = Path(...)):
-    """Verifica si un UUID de factura ya existe. Público."""
+async def check_factura_exists(request: Request, id_factura: str = Path(...)):
+    """Verifica si un UUID de factura ya existe. Solo admin/gerente."""
+    require_role(request, ["administrador", "gerente"])
     with get_engine().connect() as conn:
         exists = facturas_repo.check_exists(conn, id_factura)
 
