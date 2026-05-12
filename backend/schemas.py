@@ -553,7 +553,6 @@ class FacturaResponse(BaseModel):
     fecha_emision: datetime
     total: float
     id_movimiento: int
-    xml_data: str
 
     class Config:
         from_attributes = True

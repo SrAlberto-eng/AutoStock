@@ -65,7 +65,7 @@ def list_facturas(conn) -> list[dict]:
         text(
             """
             SELECT
-                f.id, f.id_factura, f.proveedor_id, f.fecha_emision, f.total, f.id_movimiento, f.xml_data,
+                f.id, f.id_factura, f.proveedor_id, f.fecha_emision, f.total, f.id_movimiento,
                 p.nombre AS proveedor_nombre
             FROM facturas f
             LEFT JOIN proveedores p ON f.proveedor_id = p.id
