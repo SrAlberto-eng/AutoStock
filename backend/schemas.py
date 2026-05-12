@@ -577,7 +577,7 @@ class FacturaDetailResponse(BaseModel):
     mov_fecha: Optional[datetime] = None
     mov_motivo: Optional[str] = None
     usuario_nombre: Optional[str] = None
-    productos: list[FacturaProductRow] = []
+    productos: list[FacturaProductRow] = Field(default_factory=list)
 
     class Config:
         from_attributes = True
