@@ -540,6 +540,7 @@ class FacturaCreate(BaseModel):
     total: float = Field(..., ge=0)
     id_movimiento: int = Field(..., example=10)
     xml_data: str
+    movimiento_ids: Optional[list[int]] = None
 
 
 class FacturaResponse(BaseModel):
@@ -553,6 +554,31 @@ class FacturaResponse(BaseModel):
     total: float
     id_movimiento: int
     xml_data: str
+
+    class Config:
+        from_attributes = True
+
+
+class FacturaProductRow(BaseModel):
+    producto_id: Optional[int] = None
+    producto_nombre: str
+    cantidad: float
+
+
+class FacturaDetailResponse(BaseModel):
+    """Response enriquecido para GET /facturas/{id}"""
+
+    id: int
+    id_factura: str
+    fecha_emision: datetime
+    total: float
+    id_movimiento: int
+    proveedor_nombre: Optional[str] = None
+    mov_tipo: Optional[str] = None
+    mov_fecha: Optional[datetime] = None
+    mov_motivo: Optional[str] = None
+    usuario_nombre: Optional[str] = None
+    productos: list[FacturaProductRow] = []
 
     class Config:
         from_attributes = True

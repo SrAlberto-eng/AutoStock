@@ -11,6 +11,7 @@ from repositories.base import now_utc
 from schemas import (
     ApiResponse,
     FacturaCreate,
+    FacturaDetailResponse,
     FacturaResponse,
 )
 
@@ -47,6 +48,25 @@ async def check_factura_exists(id_factura: str = Path(...)):
     )
 
 
+@router.get("/{factura_id}", response_model=ApiResponse[FacturaDetailResponse])
+async def get_factura_detail(request: Request, factura_id: int = Path(..., gt=0)):
+    """Detalle enriquecido de una factura. Solo admin/gerente."""
+    require_role(request, ["administrador", "gerente"])
+
+    with get_engine().connect() as conn:
+        row = facturas_repo.get_detail(conn, factura_id)
+
+    if not row:
+        return error_response(404, "Factura no encontrada")
+
+    return ApiResponse[FacturaDetailResponse](
+        success=True,
+        data=FacturaDetailResponse(**row),
+        error=None,
+        timestamp=now_utc(),
+    )
+
+
 @router.post("", response_model=ApiResponse[FacturaResponse])
 async def create_factura(request_body: FacturaCreate, request: Request):
     """Registra una nueva factura. Solo admin/gerente."""
@@ -63,6 +83,7 @@ async def create_factura(request_body: FacturaCreate, request: Request):
                 total=request_body.total,
                 id_movimiento=request_body.id_movimiento,
                 xml_data=request_body.xml_data,
+                movimiento_ids=request_body.movimiento_ids,
             )
 
             audit_repo.log_audit(
