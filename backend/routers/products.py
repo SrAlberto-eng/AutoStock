@@ -131,6 +131,7 @@ async def bulk_create_products(http_request: Request, payload: dict = Body(defau
     created_count = 0
     omitted_count = 0
     first_movement_id = None
+    all_movement_ids: list[int] = []
 
     with get_engine().begin() as conn:
         for raw in raw_items:
@@ -182,6 +183,7 @@ async def bulk_create_products(http_request: Request, payload: dict = Body(defau
                     motivo="Stock inicial",
                     area_id=None,
                 )
+                all_movement_ids.append(mov_id)
                 if first_movement_id is None:
                     first_movement_id = mov_id
             row = products_repo.get_by_id(conn, new_id, active_only=False)
@@ -196,6 +198,7 @@ async def bulk_create_products(http_request: Request, payload: dict = Body(defau
             "omitidos": omitted_count,
             "items": created_items,
             "first_movement_id": first_movement_id,
+            "movement_ids": all_movement_ids,
         },
         error=None,
         timestamp=now_utc(),
