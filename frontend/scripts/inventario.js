@@ -878,8 +878,17 @@ async function saveXmlSupplier() {
 
     if (_pendingXmlImport) {
       const pendingRows    = _pendingXmlImport.rows;
+      const pendingFactura = _pendingXmlImport.facturaEntry;
       _pendingXmlImport    = null;
+      if (pendingFactura) {
+        const freshSuppliers = store.getState().suppliers || [];
+        const newSupplier    = freshSuppliers.find(s => normalizeSearch(s.nombre) === normalizeSearch(nombre));
+        pendingFactura.proveedor_id = newSupplier?.id ?? null;
+        _pendingFacturasData.push(pendingFactura);
+      }
       fillAddProductRowsFromXml(pendingRows);
+      if (_pendingXmlImport === null && pendingFactura?.id_factura)
+        _addXmlFileChip(pendingFactura.id_factura.slice(0, 8) + '…');
       showToast(MSG.INVENTORY.XML_LOADED_CFDI(pendingRows.length), 'success');
     }
   } catch (err) {
@@ -890,9 +899,12 @@ async function saveXmlSupplier() {
 function skipXmlSupplier() {
   modalManager.close('modal-xml-proveedor');
   if (!_pendingXmlImport) return;
-  const pendingRows = _pendingXmlImport.rows;
-  _pendingXmlImport = null;
+  const pendingRows    = _pendingXmlImport.rows;
+  const pendingFactura = _pendingXmlImport.facturaEntry;
+  _pendingXmlImport    = null;
+  if (pendingFactura) _pendingFacturasData.push(pendingFactura);
   fillAddProductRowsFromXml(pendingRows);
+  if (pendingFactura?.id_factura) _addXmlFileChip(pendingFactura.id_factura.slice(0, 8) + '…');
   showToast(MSG.INVENTORY.XML_LOADED_CFDI(pendingRows.length), 'success');
 }
 
@@ -911,8 +923,14 @@ function fillAddProductRowsFromXml(rows) {
   const catalogs  = store.getState().catalogs  || {};
   const suppliers = store.getState().suppliers || [];
 
-  tbody.innerHTML  = '';
-  addProductRowCount = 0;
+  // Remove the single empty placeholder row if it's the only row and it's blank
+  const existingRows = Array.from(tbody.querySelectorAll('tr'));
+  if (existingRows.length === 1) {
+    const onlyInput = existingRows[0].querySelector('input[name="name"]');
+    if (!onlyInput || !onlyInput.value.trim()) existingRows[0].remove();
+  }
+
+  if (addProductRowCount === 0) addProductRowCount = tbody.rows.length;
 
   (rows || []).forEach(data => {
     addProductRowCount += 1;
@@ -931,13 +949,9 @@ function fillAddProductRowsFromXml(rows) {
 
     tbody.appendChild(tr);
     _attachNameDebounce(tr);
-
-    const nameInput = tr.querySelector('input[name="name"]');
-    const moveBtn   = tr.querySelector('[data-action="move-to-existing"]');
-    if (moveBtn && nameInput?.value.trim()) moveBtn.style.display = '';
   });
 
-  if (addProductRowCount === 0) {
+  if (tbody.rows.length === 0) {
     addProductRowCount = 1;
     const tr = document.createElement('tr');
     tr.setAttribute('data-row-id', '1');
@@ -951,13 +965,33 @@ function fillAddProductRowsFromXml(rows) {
 }
 
 async function importAddProductFromXml(file) {
+  const fileName = file.name;
   const { doc, error } = await readXmlFile(file);
   if (error) { showToast(error, 'error'); return; }
 
   const conceptoNodes = doc.querySelectorAll('cfdi\\:Concepto, Concepto');
   if (conceptoNodes.length) {
-    const emisorNode        = doc.querySelector('cfdi\\:Emisor, Emisor');
+    const timbreNode      = doc.querySelector('tfd\\:TimbreFiscalDigital, TimbreFiscalDigital');
+    const uuidFactura     = timbreNode?.getAttribute('UUID') || timbreNode?.getAttribute('uuid') || '';
+    const emisorNode      = doc.querySelector('cfdi\\:Emisor, Emisor');
     const supplierNameFromXml = emisorNode ? xmlAttrOrChild(emisorNode, 'Nombre', 'nombre') : '';
+
+    if (uuidFactura) {
+      if (_sessionImportedFacturaIds.has(uuidFactura)) {
+        showToast('Esta factura ya fue cargada en esta sesión', 'error');
+        _clearXmlFileName();
+        return;
+      }
+      try {
+        const checkRes = await FacturaService.check(uuidFactura);
+        if (checkRes?.data?.exists) {
+          showToast('Esta factura ya fue importada anteriormente', 'error');
+          _clearXmlFileName();
+          return;
+        }
+      } catch (_) {}
+      _sessionImportedFacturaIds.add(uuidFactura);
+    }
 
     const rows = Array.from(conceptoNodes).map(n => ({
       name:     xmlAttrOrChild(n, 'Descripcion', 'descripcion'),
@@ -969,13 +1003,33 @@ async function importAddProductFromXml(file) {
       supplier: supplierNameFromXml,
     }));
 
+    let pendingFacturaEntry = null;
+    if (uuidFactura) {
+      const comprobanteNode = doc.querySelector('cfdi\\:Comprobante, Comprobante');
+      pendingFacturaEntry = {
+        id_factura:    uuidFactura,
+        proveedor_id:  null,
+        supplierName:  supplierNameFromXml,
+        fecha_emision: comprobanteNode?.getAttribute('Fecha') || new Date().toISOString(),
+        total:         parseFloat(comprobanteNode?.getAttribute('Total') || '0') || 0,
+        xml_data:      await file.text(),
+      };
+    }
+
     if (supplierNameFromXml) {
       const storeSuppliers = store.getState().suppliers || [];
       const found = storeSuppliers.find(s => normalizeSearch(s.nombre) === normalizeSearch(supplierNameFromXml));
-      if (!found) { _openXmlSupplierModal(supplierNameFromXml, rows); return; }
+      if (!found) { _openXmlSupplierModal(supplierNameFromXml, rows, pendingFacturaEntry); return; }
+      if (pendingFacturaEntry) {
+        pendingFacturaEntry.proveedor_id = found.id;
+        _pendingFacturasData.push(pendingFacturaEntry);
+      }
+    } else if (pendingFacturaEntry) {
+      _pendingFacturasData.push(pendingFacturaEntry);
     }
 
     fillAddProductRowsFromXml(rows);
+    _addXmlFileChip(fileName);
     showToast(MSG.INVENTORY.XML_LOADED_CFDI(rows.length), 'success');
     return;
   }
@@ -993,12 +1047,16 @@ async function importAddProductFromXml(file) {
   }));
 
   fillAddProductRowsFromXml(rows);
+  _addXmlFileChip(fileName);
   showToast(MSG.INVENTORY.XML_LOADED(rows.length), 'success');
 }
 
 // ── Inicialización del modal Agregar ──────────────────────────────────────
 
 function initModalAddProduct() {
+  _pendingFacturasData       = [];
+  _sessionImportedFacturaIds = new Set();
+
   const tbody = document.getElementById('add-product-rows');
   if (tbody) tbody.innerHTML = '';
   addProductRowCount = 0;
@@ -1011,8 +1069,8 @@ function initModalAddProduct() {
   const existingSection = document.getElementById('ap-section-existing');
   if (existingSection) existingSection.style.display = 'none';
 
-  const fileName = document.getElementById('ap-xml-file-name');
-  if (fileName) fileName.textContent = '';
+  const filesList = document.getElementById('ap-xml-files-list');
+  if (filesList) filesList.innerHTML = '';
 }
 
 function initAddProductXmlImport() {
@@ -1020,7 +1078,7 @@ function initAddProductXmlImport() {
     dropzoneId: 'ap-xml-dropzone',
     inputId:    'ap-xml-input',
     btnId:      'ap-xml-btn',
-    fileNameId: 'ap-xml-file-name',
+    fileNameId: null,
     onFile:     importAddProductFromXml,
   });
 }
