@@ -242,7 +242,7 @@ factura = Table(
     "facturas",
     metadata,
     Column("id", Integer, primary_key=True, autoincrement=True),
-    Column("id_factura", Text, nullable=False),
+    Column("id_factura", Text, nullable=False, unique=True),
     Column(
         "proveedor_id",
         Integer,
