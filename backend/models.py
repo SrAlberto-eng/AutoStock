@@ -251,6 +251,12 @@ factura = Table(
     ),
     Column("fecha_emision", DateTime, nullable=False, default=datetime.utcnow),
     Column("total", Float, nullable=False),
-    Column("id_movimiento", Integer, ForeignKey("movimientos.id", ondelete="RESTRIC"), nullable=False),
-    Column("xml_data", Text, nullable=False)
+    Column(
+        "id_movimiento",
+        Integer,
+        ForeignKey("movimientos.id", ondelete="RESTRICT"),
+        nullable=False,
+    ),
+    Column("movimiento_ids", Text, nullable=True),
+    Column("xml_data", Text, nullable=False),
 )
