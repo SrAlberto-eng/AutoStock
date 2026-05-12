@@ -244,6 +244,24 @@
   </div>
 </div>
 
+<!-- ── Modal: Detalle de Factura ─────────────────────── -->
+<div id="modal-factura-detail" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modal-factura-detail-title" data-state="closed">
+  <div class="modal-dialog modal-panel" style="max-width:780px;">
+    <div class="modal-header">
+      <h2 id="modal-factura-detail-title" class="modal-title">Detalle de Factura</h2>
+      <button type="button" class="btn btn-ghost btn-icon" data-modal-close="modal-factura-detail" aria-label="Cerrar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="factura-detail-body">
+      <!-- filled by JS -->
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" data-modal-close="modal-factura-detail">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── AlertDialog: Confirmación de eliminación ─────── -->
 <div id="dialog-confirm-delete" class="modal-backdrop hidden" role="alertdialog" aria-modal="true" aria-labelledby="dialog-delete-title" aria-describedby="dialog-delete-desc" data-state="closed">
   <div class="modal-dialog alert-dialog-panel" style="max-width:440px;">
