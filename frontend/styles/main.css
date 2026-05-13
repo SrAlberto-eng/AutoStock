@@ -953,6 +953,28 @@ td.td-num       { text-align: center; font-variant-numeric: tabular-nums; }
 .modal-add-product-dialog .input { width: 100%; min-width: 0; font-size: 13px; padding: 6px 8px; }
 .modal-add-product-dialog .input[type="number"] { text-align: right; }
 
+/* ── Tabla "Productos existentes" (5 columnas) ─────────────────────────────
+   .ap-existing-table-wrap distingue esta tabla de la de "Nuevos productos"
+   (9 columnas) que también usa .entry-table-wrap en el mismo modal.
+   Sin esta clase, las reglas nth-child de arriba contaminarían esta tabla. */
+.modal-add-product-dialog .ap-existing-table-wrap table { table-layout: fixed; width: 100%; }
+
+/* Producto 38% | Cantidad 12% | Unidad 13% | Proveedor 30% | Acciones 76px */
+.modal-add-product-dialog .ap-existing-table-wrap th:nth-child(1),
+.modal-add-product-dialog .ap-existing-table-wrap td:nth-child(1) { width: 38%; }
+
+.modal-add-product-dialog .ap-existing-table-wrap th:nth-child(2),
+.modal-add-product-dialog .ap-existing-table-wrap td:nth-child(2) { width: 12%; text-align: right; }
+
+.modal-add-product-dialog .ap-existing-table-wrap th:nth-child(3),
+.modal-add-product-dialog .ap-existing-table-wrap td:nth-child(3) { width: 13%; }
+
+.modal-add-product-dialog .ap-existing-table-wrap th:nth-child(4),
+.modal-add-product-dialog .ap-existing-table-wrap td:nth-child(4) { width: 30%; }
+
+.modal-add-product-dialog .ap-existing-table-wrap th:nth-child(5),
+.modal-add-product-dialog .ap-existing-table-wrap td:nth-child(5) { width: 76px; text-align: center; }
+
 /* Dashboard movement modals — prevent horizontal overflow from inline widths */
 #modal-entry .entry-table-wrap table,
 #modal-exit .table-wrapper table,

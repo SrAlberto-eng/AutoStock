@@ -428,6 +428,13 @@ function addProductRow(prefill) {
   tbody.appendChild(tr);
   _attachNameDebounce(tr);
 
+  // Si el nombre viene pre-rellenado (ej. al mover desde "existentes"),
+  // disparar 'input' para que el debounce verifique la coincidencia automáticamente.
+  if (prefill?.name) {
+    const nameInput = tr.querySelector('input[name="name"]');
+    if (nameInput) nameInput.dispatchEvent(new Event('input'));
+  }
+
   if (prefill?.name) {
     const clearItem = tr.querySelector('[data-action="clear-new-row"]');
     if (clearItem) { clearItem.disabled = false; clearItem.style.opacity = ''; clearItem.style.pointerEvents = ''; }
@@ -595,7 +602,7 @@ function createExistingProductRowHTML(id, productId, cantidad, supplierId) {
           ${productOptions.join('')}
         </select>
       </td>
-      <td><input type="number" name="quantity" min="1" class="input" style="width:70px;" placeholder="0" aria-label="Cantidad" value="${cantidad > 0 ? cantidad : ''}"></td>
+      <td><input type="number" name="quantity" min="1" class="input" placeholder="0" aria-label="Cantidad" value="${cantidad > 0 ? cantidad : ''}"></td>
       <td><span class="text-sm text-muted" id="ap-existing-unit-${id}">${escapeHtml(unitName)}</span></td>
       <td><select name="supplier" class="select-native" aria-label="Proveedor">${supplierOptions.join('')}</select></td>
       <td style="white-space:nowrap;">
