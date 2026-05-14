@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "AutoStock",
+  "version": "1.0.0",
+  "identifier": "mx.uabc.autostock",
+  "build": {
+    "frontendDist": "../frontend"
+  },
+  "app": {
+    "windows": [
+      {
+        "label":     "main",
+        "title":     "AutoStock",
+        "url":       "views/login.html",
+        "width":     1280,
+        "height":    800,
+        "minWidth":  960,
+        "minHeight": 600,
+        "resizable": true,
+        "center":    true
+      }
+    ],
+    "security": { "csp": null }
+  },
+  "bundle": {
+    "active":      true,
+    "targets":     "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "externalBin": ["binaries/autostock-backend"]
+  },
+  "plugins": {
+    "shell": { "open": false }
+  }
+}

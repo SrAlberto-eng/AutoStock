@@ -19,11 +19,25 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-# Añadir backend/ al path para poder importar config y models
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Añadir backend/ al path para importar config y models.
+# En modo frozen (PyInstaller) usamos sys._MEIPASS directamente; en dev,
+# calculamos la ruta desde __file__.
+if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+    if sys._MEIPASS not in sys.path:
+        sys.path.insert(0, sys._MEIPASS)
+else:
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import config as app_config  # noqa: E402
-from models import metadata  # noqa: E402
+
+# target_metadata solo es necesario para --autogenerate (desarrollo).
+# En modo frozen solo ejecutamos 'upgrade head' con scripts pre-escritos,
+# por lo que None es válido si el import falla por aislamiento del SourceFileLoader.
+try:
+    from models import metadata  # noqa: E402
+    target_metadata = metadata
+except ImportError:
+    target_metadata = None
 
 # Configuración de Alembic desde alembic.ini
 alembic_config = context.config
@@ -31,10 +45,8 @@ alembic_config = context.config
 if alembic_config.config_file_name is not None:
     fileConfig(alembic_config.config_file_name)
 
-# Sobreescribir URL con la de la aplicación (respeta AUTOSTOCK_DB_URL)
+# Sobreescribir URL con la de la aplicación (respeta AUTOSTOCK_DB_URL y modo frozen)
 alembic_config.set_main_option("sqlalchemy.url", app_config.DATABASE_URL)
-
-target_metadata = metadata
 
 
 def run_migrations_offline() -> None:
