@@ -17,18 +17,6 @@ class JsonFormatter(logging.Formatter):
         )
 
 
-def _resolve_backend_path(path: str) -> str:
-    if os.path.isabs(path):
-        return path
-
-    backend_dir = os.path.dirname(os.path.abspath(__file__))
-    normalized = path.replace("\\", "/")
-    if normalized.startswith("backend/"):
-        project_root = os.path.dirname(backend_dir)
-        return os.path.normpath(os.path.join(project_root, normalized))
-    return os.path.normpath(os.path.join(backend_dir, path))
-
-
 def setup_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
     if not logger.handlers:
@@ -41,17 +29,19 @@ def setup_logger(name: str) -> logging.Logger:
 
 def setup_file_logger(
     name: str,
-    log_path: str = "backend/logs/autostock.log",
+    log_file: str = "autostock.log",
 ) -> logging.Logger:
-    resolved_log_path = _resolve_backend_path(log_path)
-    os.makedirs(os.path.dirname(resolved_log_path), exist_ok=True)
+    import config  # import diferido para evitar circular en import-time
+    log_path = os.path.join(config.LOG_DIR, log_file)
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+
     logger = logging.getLogger(name)
     if not logger.handlers:
         console = logging.StreamHandler()
         console.setFormatter(JsonFormatter())
 
         file_handler = RotatingFileHandler(
-            resolved_log_path,
+            log_path,
             maxBytes=5 * 1024 * 1024,
             backupCount=3,
         )

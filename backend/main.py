@@ -146,7 +146,9 @@ def seed_default_catalog(conn) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    _alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "alembic.ini"))
+    _alembic_ini = os.path.join(config.BASE_DIR, "alembic.ini")
+    _alembic_cfg = Config(_alembic_ini)
+    _alembic_cfg.set_main_option("script_location", os.path.join(config.BASE_DIR, "alembic"))
     alembic_command.upgrade(_alembic_cfg, "head")
 
     mode = db.init_wal()
@@ -166,17 +168,17 @@ async def lifespan(app: FastAPI):
                 {"nombre": nombre},
             )
 
-    def _backup_loop(db_path: str):
+    def _backup_loop(db_path: str, backup_dir: str):
         while True:
             time.sleep(24 * 60 * 60)
             try:
-                backup_database(db_path)
+                backup_database(db_path, backup_dir)
             except Exception as e:
                 logger.error(f"Error en backup: {e}")
 
     threading.Thread(
         target=_backup_loop,
-        args=(config.DATABASE_URL.replace("sqlite:///", ""),),
+        args=(config.DATABASE_URL.replace("sqlite:///", ""), config.BACKUP_DIR),
         daemon=True,
     ).start()
 
@@ -205,8 +207,11 @@ app.add_middleware(
         "http://localhost:5500",
         "http://127.0.0.1:8765",
         "http://localhost:8765",
-        "tauri://localhost",
+        "tauri://localhost",       # macOS / Linux
+        "http://tauri.localhost",  # Windows WebView2 (producción)
     ],
+    # Tauri dev mode levanta un servidor HTTP en localhost con puerto dinámico
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "Accept"],

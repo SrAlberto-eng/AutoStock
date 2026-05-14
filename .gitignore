@@ -45,3 +45,13 @@ Thumbs.db
 
 # Pruebas de playwright y node.js
 e2e/
+
+# PyInstaller
+backend/dist/
+backend/build/
+
+# Tauri
+src-tauri/target/
+src-tauri/binaries/
+src-tauri/gen/
+node_modules/

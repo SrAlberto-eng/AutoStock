@@ -7,6 +7,7 @@ import { MSG }             from './constants/messages.js';
 import { showToast }       from './toast.js';
 import { apiClient }       from './api-client.js';
 import { initThemeSwitcher } from './theme-switcher.js';
+import { waitForBackend }  from './health-check.js';
 
 const form          = document.getElementById('login-form');
 const identifierInput = document.getElementById('identifier');
@@ -22,6 +23,28 @@ const rememberChk   = document.getElementById('remember-user');
 let showPassword = false;
 
 initThemeSwitcher();
+
+// ── Backend readiness (solo activo en Tauri: overlay presente en el DOM) ────
+(async () => {
+  const overlay  = document.getElementById('backend-overlay');
+  const statusEl = document.getElementById('backend-overlay-status');
+  if (!overlay) return;
+
+  try {
+    await waitForBackend({
+      onAttempt(n) {
+        if (statusEl && n > 2) statusEl.textContent = `Iniciando servicio... (${n})`;
+      },
+    });
+    overlay.classList.add('hidden');
+  } catch {
+    if (statusEl) {
+      statusEl.textContent = 'No se pudo iniciar el servicio. Reinicia la aplicación.';
+      statusEl.style.color = 'var(--status-danger)';
+    }
+    overlay.querySelector('.animate-spin')?.remove();
+  }
+})();
 
 const savedIdentifier = localStorage.getItem('as_remember_identifier');
 if (savedIdentifier && identifierInput) {

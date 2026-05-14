@@ -35,6 +35,7 @@ Objetivo principal: operar localmente, sin dependencias externas de red, con tra
 | Auth | JWT (python-jose) + bcrypt |
 | Validacion | Pydantic v2 |
 | Frontend | HTML5, CSS3, JavaScript ES6 (sin framework) |
+| Desktop | Tauri v2 (Rust) + PyInstaller onedir |
 | Testing | pytest |
 
 ## Arquitectura
@@ -55,7 +56,9 @@ AutoStock/
 ├── .agent/                       # Artefactos internos del agente (ignorado por git)
 ├── CLAUDE.md                     # Documento interno del proyecto (ignorado por git)
 ├── README.md
-├── start.ps1                     # Arranca backend + frontend en Windows
+├── package.json                  # Scripts de Tauri (dev / build)
+├── build-backend.ps1             # Compila el sidecar PyInstaller y lo copia a src-tauri/binaries/
+├── start.ps1                     # Arranca backend + frontend en modo desarrollo (sin Tauri)
 ├── stop.ps1                      # Detiene procesos iniciados por start.ps1
 ├── backend/
 │   ├── ai/
@@ -66,22 +69,28 @@ AutoStock/
 │   ├── scripts/
 │   ├── tasks/
 │   ├── tests/
-│   ├── database/                 # autostock.db (runtime)
+│   ├── backend.spec              # Spec de PyInstaller para compilar el sidecar
 │   ├── main.py
-│   ├── config.py
+│   ├── config.py                 # Detecta modo frozen; usa %APPDATA%\AutoStock en produccion
 │   ├── database.py
 │   ├── models.py
 │   ├── schemas.py
 │   ├── validators.py
 │   └── requirements.txt
 ├── frontend/
-│   ├── index.html
 │   ├── views/
 │   ├── scripts/
+│   │   └── health-check.js       # Polling al /health hasta que el sidecar responde
 │   └── styles/
+├── src-tauri/                    # Proyecto Rust de Tauri v2
+│   ├── src/main.rs               # Spawn/kill del sidecar, ventana principal
+│   ├── capabilities/
+│   ├── build.rs                  # Copia _internal/ al directorio de build de Cargo
+│   ├── Cargo.toml
+│   └── tauri.conf.json
 └── docs/
-	 ├── CHANGELOG.md
-	 └── manual_usuario.md
+    ├── CHANGELOG.md
+    └── manual_usuario.md
 ```
 
 ## Que hace cada modulo
@@ -133,10 +142,15 @@ Todos los scripts son ES Modules. Cada vista carga un unico `<script type="modul
 
 ## Requisitos
 
-- Python 3.11+
-- pip
-- PowerShell (si usas `start.ps1` y `stop.ps1` en Windows)
+### Desarrollo (modo script)
+- Python 3.11+, pip
+- PowerShell
 - Puertos libres `8765` (backend) y `5500` (frontend)
+
+### Desarrollo y compilacion con Tauri
+- Todo lo anterior, mas:
+- Node.js 18+ y npm
+- Rust (instalar con `winget install Rustlang.Rustup` y reiniciar terminal)
 
 ## Clonar repositorio
 
@@ -158,9 +172,34 @@ python -m venv .venv
 
 ## Como ejecutar
 
-### Opcion A: Windows con scripts
+### Opcion A: App de escritorio con Tauri (recomendado)
 
-Desde la raiz del proyecto:
+Requiere Rust y Node.js instalados.
+
+**Primera vez — compilar el sidecar de Python:**
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\pip install -r backend\requirements.txt
+.\build-backend.ps1
+```
+
+**Modo desarrollo** (abre la ventana de la app con WebView):
+
+```powershell
+npm run dev
+```
+
+**Generar instalador `.msi`** (requiere iconos en `src-tauri/icons/`):
+
+```powershell
+npx tauri icon ruta\a\icono.png   # genera todos los tamaños
+npm run build                      # produce el .msi en src-tauri/target/release/bundle/msi/
+```
+
+En produccion la base de datos, logs y backups se guardan en `%APPDATA%\AutoStock\`.
+
+### Opcion B: Windows con scripts (desarrollo clasico)
 
 ```powershell
 .\start.ps1
@@ -170,18 +209,13 @@ Servicios disponibles:
 
 - Backend: `http://127.0.0.1:8765`
 - Swagger: `http://127.0.0.1:8765/docs`
-- Health: `http://127.0.0.1:8765/health`
 - Frontend: `http://127.0.0.1:5500`
 
-Para detener:
-
 ```powershell
-.\stop.ps1
+.\stop.ps1   # detener
 ```
 
-Nota: `start.ps1` usa `python` desde PATH. Para portabilidad, solo asegurate de tener el entorno virtual activado en la terminal desde la que lo ejecutas.
-
-### Opcion B: Manual (cualquier SO)
+### Opcion C: Manual (cualquier SO)
 
 Terminal 1 (backend):
 
@@ -310,24 +344,29 @@ Base URL: `http://127.0.0.1:8765`
 - Reportes de movimientos con filtros y exportacion CSV.
 - Toggle dark/light persistente en todas las vistas incluido login.
 - Frontend completamente migrado a ES Modules: cero globals en `window`, cero `onclick` en HTML, un solo `<script type="module">` por vista.
+- Empaquetado como app de escritorio con Tauri v2: sidecar PyInstaller, overlay de inicio con health check, datos en `%APPDATA%\AutoStock\`.
 
 ### Pendiente
 
 - Matching semantico real en `backend/ai/matcher.py` (actualmente heuristico).
 - Endpoint para guardar perfil desde UI (boton existe, `saveProfile()` es placeholder).
 - Vista de audit-log (endpoint `GET /api/reportes/audit-log` existe, frontend no lo consume aun).
-- Empaquetar como .exe con Tauri (Rust no instalado).
+- Generacion de iconos e instalador `.msi` final.
 
 ## Problemas comunes
 
 1. Error de modulo faltante:
-	instala dependencias en `backend/requirements.txt` con entorno activo.
+   instala dependencias en `backend/requirements.txt` con entorno activo.
 2. Puerto ocupado:
-	ejecuta `stop.ps1` o libera puertos `8765/5500`.
+   ejecuta `stop.ps1` o libera puertos `8765/5500`.
 3. Token expirado:
-	vuelve a iniciar sesion.
+   vuelve a iniciar sesion.
 4. Base bloqueada:
-	cierra procesos previos y reinicia backend.
+   cierra procesos previos y reinicia backend.
+5. Overlay de Tauri no desaparece:
+   puede haber un proceso `autostock-backend` huerfano usando el puerto 8765; terminalo en el Administrador de tareas y reinicia la app.
+6. Sidecar no arranca tras `npm run dev`:
+   ejecuta `.\build-backend.ps1` para regenerar el binario y luego reinicia `npm run dev`.
 
 ## Licencia
 

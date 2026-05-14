@@ -5,6 +5,27 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ---
 
+## [1.4.0] - 2026-05-13
+
+### Added
+- **Empaquetado de escritorio con Tauri v2:** la app se distribuye como instalador `.msi` para Windows sin requerir Python ni Node.js en la máquina destino.
+  - `src-tauri/` — proyecto Rust con `tauri.conf.json`, `Cargo.toml`, `build.rs`, `src/main.rs` y `capabilities/default.json`.
+  - `package.json` — scripts `dev` y `build` vía `@tauri-apps/cli`.
+  - `build-backend.ps1` — script de compilación PyInstaller: genera el onedir, detecta el target triple de Rust y copia el binario a `src-tauri/binaries/`.
+  - `backend/backend.spec` — spec de PyInstaller en modo `--onedir`; incluye `alembic/` y `alembic.ini` como data files; lista exhaustiva de `hiddenimports` para jose, bcrypt, pydantic-core, alembic, SQLAlchemy, uvicorn y módulos locales.
+- **Sidecar de backend:** Tauri spawna `autostock-backend-x86_64-pc-windows-msvc.exe` al iniciar y lo mata al cerrar la ventana. Los archivos del onedir (DLLs, `_internal/`) se copian automáticamente a `target/{profile}/` vía `build.rs`.
+- **Overlay de inicio en frontend:** `frontend/scripts/health-check.js` exporta `waitForBackend()` que hace polling a `GET /health` cada 500 ms (timeout 30 s). El overlay cubre la pantalla de login hasta que el sidecar responde, mostrando contador de intentos y mensaje de error si se agota el tiempo.
+
+### Changed
+- **`backend/config.py`** — reescrito para detectar modo frozen (`sys._MEIPASS`). En producción usa `%APPDATA%\AutoStock` para DB, logs y backups; en desarrollo mantiene el directorio `backend/` local. Exporta `BASE_DIR`, `APP_DATA_DIR`, `BACKUP_DIR` y `LOG_DIR`.
+- **`backend/main.py`** — Alembic se configura con `script_location` explícito desde `config.BASE_DIR` para funcionar en contexto frozen. El hilo de backup recibe `config.BACKUP_DIR` como argumento. CORS ampliado con `http://tauri.localhost` (Windows WebView2 producción) y regex `http://(localhost|127\.0\.0\.1)(:\d+)?` (servidor de desarrollo de Tauri).
+- **`backend/logging_config.py`** — `setup_file_logger` resuelve la ruta de log desde `config.LOG_DIR`; eliminado el helper `_resolve_backend_path` que usaba rutas relativas rotas en modo frozen.
+- **`backend/tasks/backup.py`** — `backup_database` acepta `backup_dir` opcional; si es `None` lo obtiene de `config.BACKUP_DIR`.
+- **`backend/alembic/env.py`** — detección de modo frozen para insertar `sys._MEIPASS` en `sys.path`; importación de `models.metadata` envuelta en `try/except ImportError` (`target_metadata = None` es válido para `upgrade head` sin `--autogenerate`).
+- **`.gitignore`** — añadidas entradas `backend/dist/`, `backend/build/`, `src-tauri/target/`, `src-tauri/binaries/`, `src-tauri/gen/` y `node_modules/`.
+
+---
+
 ## [1.3.0] - 2026-05-09
 
 ### Added
