@@ -148,17 +148,10 @@ productos = Table(
         ForeignKey("areas.id", ondelete="RESTRICT"),
         nullable=False,
     ),
-    Column(
-        "unidad_id",
+    Column("unidad_id",
         Integer,
         ForeignKey("unidades_medida.id", ondelete="RESTRICT"),
         nullable=False,
-    ),
-    Column(
-        "proveedor_id",
-        Integer,
-        ForeignKey("proveedores.id", ondelete="SET NULL"),
-        nullable=True,
     ),
     Column("stock_actual", Float, nullable=False, server_default="0"),
     Column("stock_min", Float, nullable=False, server_default="0"),
@@ -169,6 +162,29 @@ productos = Table(
     CheckConstraint("stock_actual >= 0", name="ck_productos_stock_actual_non_negative"),
     Index("idx_productos_nombre", "nombre"),
 )
+
+# ---------------------------------------------------------------------------
+# Relación Producto-Proveedor (M:N)
+# ---------------------------------------------------------------------------
+
+productos_proveedores = Table(
+    "productos_proveedores",
+    metadata,
+    Column(
+        "producto_id",
+        Integer,
+        ForeignKey("productos.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "proveedor_id",
+        Integer,
+        ForeignKey("proveedores.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
+
 
 # ---------------------------------------------------------------------------
 # Movimientos

@@ -166,7 +166,7 @@ class ProductResponse(BaseModel):
     categoria_id: int
     area_id: int
     unidad_id: int
-    proveedor_id: Optional[int]
+    proveedor_ids: Optional[str] = None
     stock_actual: float
     stock_min: float
     stock_max: float
