@@ -10,10 +10,10 @@ def list_proveedores(conn, include_inactive: bool = False) -> list[dict]:
             f"""
             SELECT
                 p.id, p.nombre, p.email, p.telefono, p.activo,
-                COUNT(pr.id) AS productos_asociados
+                COUNT(pp.producto_id) AS productos_asociados
             FROM proveedores p
-            LEFT JOIN productos pr
-                ON pr.proveedor_id = p.id AND pr.activo = 1
+            LEFT JOIN productos_proveedores pp ON pp.proveedor_id = p.id
+            LEFT JOIN productos pr ON pr.id = pp.producto_id AND pr.activo = 1
             {where}
             GROUP BY p.id, p.nombre, p.email, p.telefono, p.activo
             ORDER BY p.nombre ASC
@@ -65,6 +65,10 @@ def toggle_activo(conn, proveedor_id: int, nuevo_estado: int):
 
 def count_linked_products(conn, proveedor_id: int) -> int:
     return conn.execute(
-        text("SELECT COUNT(*) FROM productos WHERE proveedor_id = :id AND activo = 1"),
+        text(
+            "SELECT COUNT(*) FROM productos_proveedores pp "
+            "JOIN productos pr ON pr.id = pp.producto_id AND pr.activo = 1 "
+            "WHERE pp.proveedor_id = :id"
+        ),
         {"id": proveedor_id},
     ).scalar_one()

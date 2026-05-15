@@ -224,7 +224,7 @@ function renderTablaProductos(items) {
         data-name="${escapeHtml(item.nombre)}"
         data-category="${escapeHtml(String(item.categoria_id))}"
         data-area="${escapeHtml(String(item.area_id))}"
-        data-supplier="${escapeHtml(String(item.proveedor_id ?? ''))}"
+        data-supplier="${escapeHtml(String(item.proveedor_ids ?? ''))}"
         data-status="${escapeHtml(statusKey)}">
       <td>${escapeHtml(item.nombre)}</td>
       <td>${escapeHtml(categoriaNombre)}</td>
@@ -508,11 +508,17 @@ function _attachNameDebounce(rowEl) {
       try {
         const res    = await ProductService.checkName(name);
         const exists = !!(res?.data?.exists);
+        const isInactive = exists && res.data.activo === false;
         nameInput.classList.toggle('input-warning', exists);
+        const hint = rowEl.querySelector('.row-name-hint');
         if (exists) {
           rowEl.dataset.existingProductId = res.data.id;
+          if (hint) hint.title = isInactive
+            ? 'Este producto está deshabilitado. Si lo agregas desde XML se reactivará automáticamente.'
+            : 'Ya existe en el inventario. Usa "Mover a existentes" para sumar stock.';
         } else {
           delete rowEl.dataset.existingProductId;
+          if (hint) hint.title = '';
         }
         _setMoveItem(exists);
       } catch (_) {}
@@ -544,20 +550,44 @@ async function validateXmlProductNames() {
     const name        = nameInput?.value.trim();
     if (!name) return null;
 
-    const stockInput    = row.querySelector('input[name="stock"]');
+    const stockInput     = row.querySelector('input[name="stock"]');
     const supplierSelect = row.querySelector('select[name="supplier"]');
-    const cantidad      = parseFloat(stockInput?.value) || 0;
-    const supplierId    = supplierSelect?.value ? Number(supplierSelect.value) : null;
+    const cantidad       = parseFloat(stockInput?.value) || 0;
+    const supplierId     = supplierSelect?.value ? Number(supplierSelect.value) : null;
 
     try {
       const res = await ProductService.checkName(name);
-      if (res?.data?.exists) return { row, productId: res.data.id, cantidad, supplierId };
+      if (res?.data?.exists) {
+        const productId = res.data.id;
+        if (res.data.activo === false) {
+          try { await ProductService.toggle(productId); } catch (_) {}
+          showToast(`"${name}" estaba deshabilitado y fue reactivado automáticamente`, 'warning');
+        }
+        return { row, productId, cantidad, supplierId };
+      }
     } catch (_) {}
     return null;
   });
 
   const toMove = (await Promise.all(checks)).filter(Boolean);
   if (!toMove.length) return;
+
+  // Productos reactivados no están en el store (estaban inactivos) — cargarlos antes de construir el select
+  const reactivatedIds = toMove
+    .filter(({ productId }) => !(store.getState().products || []).some(p => p.id === productId))
+    .map(({ productId }) => productId);
+
+  if (reactivatedIds.length) {
+    const fetched = await Promise.all(
+      reactivatedIds.map(id => ProductService.getById(id).catch(() => null))
+    );
+    const newProducts = fetched
+      .map(r => r?.data?.producto ?? r?.data)
+      .filter(Boolean);
+    if (newProducts.length) {
+      store.setState({ products: [...(store.getState().products || []), ...newProducts] });
+    }
+  }
 
   toMove.forEach(({ row, productId, cantidad, supplierId }) => {
     addExistingProductRow(productId, cantidad, supplierId);
@@ -774,15 +804,19 @@ async function saveNewProducts() {
   });
 
   // Filas existentes
+  const existingProviderUpdates = [];
   document.querySelectorAll('#existing-product-rows tr').forEach(row => {
-    const productSelect = row.querySelector('select[name="product"]');
-    const qtyInput      = row.querySelector('input[name="quantity"]');
-    const productId     = Number(productSelect?.value || 0);
-    const cantidad      = parseFloat(qtyInput?.value) || 0;
+    const productSelect  = row.querySelector('select[name="product"]');
+    const qtyInput       = row.querySelector('input[name="quantity"]');
+    const supplierSelect = row.querySelector('select[name="supplier"]');
+    const productId      = Number(productSelect?.value || 0);
+    const cantidad       = parseFloat(qtyInput?.value) || 0;
+    const supplierId     = supplierSelect?.value ? Number(supplierSelect.value) : null;
 
     if (!productId) { invalid = true; productSelect?.classList.add('input-error'); return; }
     if (cantidad <= 0) { invalid = true; qtyInput?.classList.add('input-error'); return; }
     movementItems.push({ producto_id: productId, cantidad });
+    if (supplierId) existingProviderUpdates.push({ productId, supplierId });
   });
 
   if (invalid)                                       { showToast(MSG.INVENTORY.SAVE_REQUIRED_FIELDS, 'error'); return; }
@@ -800,6 +834,14 @@ async function saveNewProducts() {
     if (movementItems.length) {
       const movRes = await MovementService.create('entrada', movementItems, { motivo: 'Carga desde inventario' });
       firstMovId   = firstMovId ?? (movRes?.data?.first_movement_id ?? null);
+    }
+
+    if (existingProviderUpdates.length) {
+      await Promise.all(
+        existingProviderUpdates.map(({ productId, supplierId }) =>
+          ProductService.update(productId, { proveedor_id: supplierId }).catch(() => {})
+        )
+      );
     }
 
     if (_pendingFacturasData.length && firstMovId) {
@@ -878,7 +920,10 @@ async function saveXmlSupplier() {
   try {
     await ProviderService.create({ nombre, email: email || null, telefono: telefono || null });
     const res = await ProviderService.getAll();
-    if (res?.data?.items) store.setState({ suppliers: res.data.items });
+    if (res?.data?.items) {
+      store.setState({ suppliers: res.data.items });
+      populateFilterDropdowns();
+    }
 
     showToast(MSG.INVENTORY.SUPPLIER_ADDED(nombre), 'success');
     modalManager.close('modal-xml-proveedor');
@@ -1258,7 +1303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     predicates: [
       (c, r) => !c.category         || r.rowCategory === c.category,
       (c, r) => !c.area             || r.rowArea     === c.area,
-      (c, r) => !c.supplier         || r.rowSupplier === c.supplier,
+      (c, r) => !c.supplier         || r.rowSupplier.split(',').includes(c.supplier),
       (c, r) => !c.selectedStatuses.length || c.selectedStatuses.includes(r.rowStatus),
     ],
     setEmptyState: result => {
