@@ -9,9 +9,11 @@ from repositories.base import now_utc, compute_estado
 
 _SELECT_PRODUCT = """
     SELECT
-        id, nombre, categoria_id, area_id, unidad_id, proveedor_id,
-        stock_actual, stock_min, stock_max, estado, activo, created_at
-    FROM productos
+        p.id, p.nombre, p.categoria_id, p.area_id, p.unidad_id,
+        GROUP_CONCAT(pp.proveedor_id) as proveedor_ids,
+        p.stock_actual, p.stock_min, p.stock_max, p.estado, p.activo, p.created_at
+    FROM productos p
+    LEFT JOIN productos_proveedores pp ON p.id = pp.producto_id
 """
 
 
@@ -23,20 +25,20 @@ def list_products(
     estado: str | None = None,
     include_inactive: bool = False,
 ) -> list[dict]:
-    clauses = [] if include_inactive else ["activo = 1"]
+    clauses = [] if include_inactive else ["p.activo = 1"]
     params: dict[str, Any] = {}
 
     if nombre and nombre.strip():
-        clauses.append("LOWER(nombre) LIKE :nombre")
+        clauses.append("LOWER(p.nombre) LIKE :nombre")
         params["nombre"] = f"%{nombre.strip().lower()}%"
     if categoria_id is not None:
-        clauses.append("categoria_id = :categoria_id")
+        clauses.append("p.categoria_id = :categoria_id")
         params["categoria_id"] = categoria_id
     if area_id is not None:
-        clauses.append("area_id = :area_id")
+        clauses.append("p.area_id = :area_id")
         params["area_id"] = area_id
     if estado and estado.strip():
-        clauses.append("estado = :estado")
+        clauses.append("p.estado = :estado")
         params["estado"] = estado.strip()
 
     if clauses:
@@ -44,16 +46,16 @@ def list_products(
     else:
         where_sql = ""
     rows = conn.execute(
-        text(f"{_SELECT_PRODUCT}{where_sql} ORDER BY id DESC"),
+        text(f"{_SELECT_PRODUCT}{where_sql} GROUP BY p.id ORDER BY p.id DESC"),
         params,
     ).mappings().all()
     return [dict(r) for r in rows]
 
 
 def get_by_id(conn, product_id: int, active_only: bool = True) -> dict | None:
-    where = "WHERE id = :id AND activo = 1" if active_only else "WHERE id = :id"
+    where = "WHERE p.id = :id AND p.activo = 1" if active_only else "WHERE p.id = :id"
     row = conn.execute(
-        text(f"{_SELECT_PRODUCT} {where} LIMIT 1"),
+        text(f"{_SELECT_PRODUCT} {where} GROUP BY p.id LIMIT 1"),
         {"id": product_id},
     ).mappings().first()
     return dict(row) if row else None
@@ -70,16 +72,60 @@ def create_product(
     stock_max: float,
     stock_actual: float = 0.0,
 ) -> int:
+    # 1. Verificar si el producto ya existe por nombre (activo o inactivo)
+    existing = find_product_by_name(conn, nombre)
+
+    if existing:
+        existing_id = existing["id"]
+
+        # Re-habilitar si estaba inactivo (evita duplicados en cualquier flujo)
+        if not existing["activo"]:
+            conn.execute(
+                text("UPDATE productos SET activo = 1 WHERE id = :id"),
+                {"id": existing_id}
+            )
+
+        # 2a. Sumar stock y actualizar estado
+        row = conn.execute(
+            text("SELECT stock_actual, stock_min FROM productos WHERE id = :id"),
+            {"id": existing_id}
+        ).mappings().first()
+
+        nuevo_stock = float(row["stock_actual"]) + stock_actual
+        nuevo_estado = compute_estado(nuevo_stock, float(row["stock_min"]))
+
+        conn.execute(
+            text("""
+                UPDATE productos
+                SET stock_actual = :stock, estado = :estado
+                WHERE id = :id
+            """),
+            {"stock": nuevo_stock, "estado": nuevo_estado, "id": existing_id}
+        )
+
+        # Asociar nuevo proveedor si no está asociado
+        if proveedor_id:
+            conn.execute(
+                text("""
+                    INSERT OR IGNORE INTO productos_proveedores (producto_id, proveedor_id)
+                    VALUES (:p_id, :pr_id)
+                """),
+                {"p_id": existing_id, "pr_id": proveedor_id}
+            )
+
+        return existing_id
+
+    # 2b. Si no existe, crear producto y asociación
     estado = compute_estado(stock_actual, stock_min)
 
     result = conn.execute(
         text(
             """
             INSERT INTO productos (
-                nombre, categoria_id, area_id, unidad_id, proveedor_id,
+                nombre, categoria_id, area_id, unidad_id,
                 stock_actual, stock_min, stock_max, estado, activo, created_at
             ) VALUES (
-                :nombre, :categoria_id, :area_id, :unidad_id, :proveedor_id,
+                :nombre, :categoria_id, :area_id, :unidad_id,
                 :stock_actual, :stock_min, :stock_max, :estado, 1, :created_at
             )
             """
@@ -89,7 +135,6 @@ def create_product(
             "categoria_id": categoria_id,
             "area_id": area_id,
             "unidad_id": unidad_id,
-            "proveedor_id": proveedor_id,
             "stock_actual": stock_actual,
             "stock_min": stock_min,
             "stock_max": stock_max,
@@ -97,7 +142,15 @@ def create_product(
             "created_at": now_utc(),
         },
     )
-    return result.lastrowid
+    new_id = result.lastrowid
+    
+    if proveedor_id:
+        conn.execute(
+            text("INSERT INTO productos_proveedores (producto_id, proveedor_id) VALUES (:p_id, :pr_id)"),
+            {"p_id": new_id, "pr_id": proveedor_id}
+        )
+        
+    return new_id
 
 
 def update_product(conn, product_id: int, fields: dict[str, Any]):
@@ -160,9 +213,22 @@ def update_stock_estado(conn, product_id: int):
             {"estado": estado, "id": product_id},
         )
         
-def find_product_by_name(conn, product_name: str) -> int | None:
+def associate_provider(conn, product_id: int, proveedor_id: int):
+    conn.execute(
+        text("""
+            INSERT OR IGNORE INTO productos_proveedores (producto_id, proveedor_id)
+            VALUES (:p_id, :pr_id)
+        """),
+        {"p_id": product_id, "pr_id": proveedor_id}
+    )
+
+
+def find_product_by_name(conn, product_name: str) -> dict | None:
     result = conn.execute(
-        text("SELECT id FROM productos WHERE LOWER(nombre) = LOWER(:product_name) LIMIT 1"),
+        text(
+            "SELECT id, activo FROM productos "
+            "WHERE LOWER(TRIM(nombre)) = LOWER(TRIM(:product_name)) LIMIT 1"
+        ),
         {"product_name": product_name}
-    ).first()
-    return result[0] if result else None
+    ).mappings().first()
+    return dict(result) if result else None

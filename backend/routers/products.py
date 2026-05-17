@@ -28,7 +28,7 @@ def _row_to_product(row: Any) -> ProductResponse:
         categoria_id=row["categoria_id"],
         area_id=row["area_id"],
         unidad_id=row["unidad_id"],
-        proveedor_id=row["proveedor_id"],
+        proveedor_ids=row.get("proveedor_ids"),
         stock_actual=float(row["stock_actual"]),
         stock_min=float(row["stock_min"]),
         stock_max=float(row["stock_max"]),
@@ -208,13 +208,14 @@ async def bulk_create_products(http_request: Request, payload: dict = Body(defau
 @router.get("/check_name", response_model=ApiResponse[dict])
 async def get_id_product_by_name(http_request: Request, name: str = Query(...)):
     with get_engine().begin() as conn:
-        product_id = products_repo.find_product_by_name(conn, name)
+        product = products_repo.find_product_by_name(conn, name)
 
     return ApiResponse[dict](
         success=True,
         data={
-            "exists": product_id is not None,
-            "id": product_id
+            "exists": product is not None,
+            "id": product["id"] if product else None,
+            "activo": bool(product["activo"]) if product else None,
         },
         error=None,
         timestamp=now_utc(),
@@ -268,12 +269,12 @@ async def update_product(
         "categoria_id",
         "area_id",
         "unidad_id",
-        "proveedor_id",
         "stock_actual",
         "stock_min",
         "stock_max",
     }
     incoming = {k: v for k, v in payload.items() if k in allowed_fields}
+    new_proveedor_id = payload.get("proveedor_id")
 
     with get_engine().begin() as conn:
         current = products_repo.get_by_id(conn, product_id)
@@ -293,7 +294,7 @@ async def update_product(
 
         if "nombre" in incoming:
             incoming["nombre"] = sanitize_string(incoming["nombre"], 100, "nombre")
-        for int_field in ("categoria_id", "area_id", "unidad_id", "proveedor_id"):
+        for int_field in ("categoria_id", "area_id", "unidad_id"):
             if int_field in incoming and incoming[int_field] is not None:
                 incoming[int_field] = int(incoming[int_field])
         for float_field in ("stock_actual", "stock_min", "stock_max"):
@@ -301,6 +302,10 @@ async def update_product(
                 incoming[float_field] = float(incoming[float_field])
 
         products_repo.update_product(conn, product_id, incoming)
+
+        if new_proveedor_id is not None:
+            products_repo.associate_provider(conn, product_id, int(new_proveedor_id))
+
         audit_repo.log_audit(
             conn,
             usuario_id=usuario_id,
