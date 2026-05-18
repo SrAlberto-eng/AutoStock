@@ -5,6 +5,20 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ---
 
+## [1.4.1] - 2026-05-17
+
+### Fixed
+- **`src-tauri/tauri.conf.json`** — versión actualizada a `1.4.0` para alinear con el changelog; agregado `bundle.resources` con `_internal/` para que el sidecar PyInstaller funcione en instaladores limpios.
+- **`package.json` / `Cargo.toml`** — versiones sincronizadas a `1.4.0`.
+- **`src-tauri/capabilities/default.json`** — movido a la ubicación correcta (`src-tauri/capabilities/`) requerida por Tauri v2; estaba en `src-tauri/binaries/capabilities/`.
+- **`src-tauri/src/main.rs`** — reemplazados `.expect()` (que causaban panic sin mensaje) por `map_err(...)?` para propagar errores de arranque del sidecar de forma controlada.
+- **`backend/alembic/env.py`** — `except ImportError` ahora re-lanza el error en modo desarrollo; solo se suprime en modo frozen (PyInstaller) para evitar silenciar errores reales de `models.py`.
+- **`build-backend.ps1`** — versión de PyInstaller pinneada a `>=6.0,<7` para evitar instalaciones de versiones mayores incompatibles.
+- **`.gitignore`** — agregado `backend/backups/` (el path correcto en modo dev; la entrada anterior `backend/backend/backups/` era incorrecta).
+- **`README.md`** — agregado paso `npm install` en las instrucciones de primer uso de Tauri.
+
+---
+
 ## [1.4.0] - 2026-05-13
 
 ### Added

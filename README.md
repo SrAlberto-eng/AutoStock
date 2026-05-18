@@ -187,6 +187,7 @@ python -m venv .venv
 **Modo desarrollo** (abre la ventana de la app con WebView):
 
 ```powershell
+npm install      # solo la primera vez
 npm run dev
 ```
 

@@ -45,7 +45,7 @@ if (-not (Test-Path $VenvPython)) {
 # ── Instalar PyInstaller si no está disponible ────────────────────────────────
 if (-not (Test-Path $PyInstaller)) {
     Write-Host "[build] Instalando PyInstaller en el venv..." -ForegroundColor Cyan
-    & $VenvPip install pyinstaller --quiet
+    & $VenvPip install "pyinstaller>=6.0,<7" --quiet
     if ($LASTEXITCODE -ne 0) { Write-Error "No se pudo instalar PyInstaller." }
 }
 

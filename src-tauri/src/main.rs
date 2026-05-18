@@ -11,13 +11,15 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
-            let (mut _rx, child) = app
+            let sidecar_cmd = app
                 .handle()
                 .shell()
                 .sidecar("autostock-backend")
-                .expect("sidecar no encontrado")
+                .map_err(|e| format!("Sidecar no encontrado: {e}"))?;
+
+            let (mut _rx, child) = sidecar_cmd
                 .spawn()
-                .expect("error al iniciar backend");
+                .map_err(|e| format!("Error al iniciar backend: {e}"))?;
 
             app.manage(SidecarState(Mutex::new(Some(child))));
 
