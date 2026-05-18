@@ -37,6 +37,8 @@ try:
     from models import metadata  # noqa: E402
     target_metadata = metadata
 except ImportError:
+    if not (getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')):
+        raise
     target_metadata = None
 
 # Configuración de Alembic desde alembic.ini

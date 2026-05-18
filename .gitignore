@@ -19,6 +19,7 @@ backend/.pytest_cache/
 
 # Logs y backups generados en runtime
 backend/logs/
+backend/backups/
 backend/backend/logs/
 backend/backend/backups/
 
